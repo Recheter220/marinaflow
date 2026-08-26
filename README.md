@@ -1,58 +1,135 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# MarinaFlow
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema de gestão de marina: cadastro de embarcações e funcionários, registro de
+serviços realizados e consulta ao histórico. Aplicação web construída com
+[Laravel](https://laravel.com), [Inertia.js](https://inertiajs.com) e
+[React](https://react.dev), em substituição à versão anterior, um aplicativo
+desktop feito em Tauri/Rust.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Backend:** PHP 8.5 + Laravel 13
+- **Frontend:** React 19 + Inertia.js v3 + Mantine UI
+- **Build:** Vite
+- **Banco de dados:** SQLite (padrão local) — configurável via `.env`
+- **Ambiente de desenvolvimento:** [Laravel Sail](https://laravel.com/docs/sail) (Docker)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Pré-requisitos
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3+ e [Composer](https://getcomposer.org/) (só para instalar as
+  dependências — a aplicação em si roda dentro do Docker)
+- [Docker](https://www.docker.com/) e Docker Compose (para rodar via Sail — recomendado)
+- Alternativamente, para rodar tudo sem Docker: PHP 8.3+ com as extensões
+  usadas pelo Laravel (incluindo `pdo_sqlite`) e Node.js 20+
 
-## Learning Laravel
+## Instalação (com Docker/Sail — recomendado)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+1. Clone o repositório e entre na pasta do projeto:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+   ```bash
+   git clone <url-do-repositorio>
+   cd marinaflow
+   ```
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+2. Copie o arquivo de variáveis de ambiente e instale as dependências PHP:
 
-## Agentic Development
+   ```bash
+   cp .env.example .env
+   composer install
+   ```
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+3. Suba os containers (a primeira vez faz o build da imagem, pode demorar um pouco):
+
+   ```bash
+   ./vendor/bin/sail up -d
+   ```
+
+4. Gere a chave da aplicação, crie o banco SQLite e rode as migrations:
+
+   ```bash
+   ./vendor/bin/sail artisan key:generate
+   touch database/database.sqlite
+   ./vendor/bin/sail artisan migrate --seed
+   ```
+
+5. Instale as dependências JavaScript e suba o Vite:
+
+   ```bash
+   ./vendor/bin/sail npm install
+   ./vendor/bin/sail npm run dev
+   ```
+
+6. Acesse a aplicação em [http://localhost:8080](http://localhost:8080) (porta
+   definida em `APP_PORT` no `.env.example`, escolhida para não colidir com
+   outros projetos rodando na porta 80 padrão do Sail).
+
+### Login padrão
+
+O seeder cria um usuário administrador para o primeiro acesso:
+
+- **E-mail:** `admin@marinaflow.local`
+- **Senha:** `admin123`
+
+Demais usuários são criados por convite (link enviado por e-mail). Como
+`MAIL_MAILER=log` por padrão, os e-mails de convite/redefinição de senha ficam
+gravados em `storage/logs/laravel.log` em vez de serem enviados de verdade.
+
+## Instalação (sem Docker)
+
+1. Copie o `.env` e instale as dependências:
+
+   ```bash
+   cp .env.example .env
+   composer install
+   npm install
+   ```
+
+2. Gere a chave da aplicação, crie o banco SQLite e rode as migrations:
+
+   ```bash
+   php artisan key:generate
+   touch database/database.sqlite
+   php artisan migrate --seed
+   ```
+
+3. Suba o servidor de desenvolvimento (PHP + fila + logs + Vite juntos):
+
+   ```bash
+   composer run dev
+   ```
+
+   A aplicação fica disponível na porta configurada em `APP_PORT`/`APP_URL` no `.env`.
+
+## Rodando os testes
+
+Com Sail:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+./vendor/bin/sail artisan test
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Sem Sail:
 
-## Contributing
+```bash
+php artisan test
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Formatação de código
 
-## Code of Conduct
+O projeto usa o [Laravel Pint](https://laravel.com/docs/pint). Antes de
+finalizar alterações em arquivos PHP, rode:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+./vendor/bin/sail pint --dirty
+```
 
-## Security Vulnerabilities
+(ou `vendor/bin/pint --dirty`, sem Sail)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Estrutura do projeto
 
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- `app/Http/Controllers` — controllers HTTP
+- `app/Services` — regras de domínio e invariantes de negócio
+- `app/Models` — modelos Eloquent
+- `resources/js/pages` — páginas React renderizadas via Inertia
+- `database/migrations` — schema do banco de dados
+- `tests/Feature` — testes de recurso (o grosso da cobertura do projeto)
