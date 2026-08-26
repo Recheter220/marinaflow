@@ -38,6 +38,7 @@ class Servico extends Model
     {
         return [
             'data_execucao' => 'date',
+            'descricao' => 'array',
         ];
     }
 

@@ -21,7 +21,8 @@ class StoreServicoRequest extends FormRequest
         return [
             'embarcacao_id' => ['required', 'integer', Rule::exists('embarcacoes', 'id')],
             'funcionario_id' => ['required', 'integer', Rule::exists('funcionarios', 'id')],
-            'descricao' => ['required', 'array'],
+            'descricao' => ['required', 'array', 'min:1'],
+            'descricao.*' => ['required', 'string'],
             'data_execucao' => ['required', 'date'],
             'observacao' => ['nullable', 'string'],
         ];

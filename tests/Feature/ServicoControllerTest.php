@@ -24,12 +24,13 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'descricao' => 'Limpeza, Motor',
+                'descricao' => ['Limpeza', 'Motor'],
                 'data_execucao' => '2026-01-15',
             ])
             ->assertRedirect();
 
         $servico = Servico::query()->firstOrFail();
+        $this->assertSame(['Limpeza', 'Motor'], $servico->descricao);
         $this->assertSame(Servico::STATUS_EM_EXECUCAO, $servico->status);
         $this->assertSame($admin->id, $servico->created_by_user_id);
         $this->assertSame($admin->id, $servico->updated_by_user_id);
@@ -45,7 +46,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => 999,
                 'funcionario_id' => $funcionario->id,
-                'descricao' => 'Limpeza',
+                'descricao' => ['Limpeza'],
                 'data_execucao' => '2026-01-15',
             ])
             ->assertSessionHasErrors('embarcacao_id');
@@ -61,7 +62,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => 999,
-                'descricao' => 'Limpeza',
+                'descricao' => ['Limpeza'],
                 'data_execucao' => '2026-01-15',
             ])
             ->assertSessionHasErrors('funcionario_id');
@@ -77,7 +78,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'descricao' => 'Limpeza',
+                'descricao' => ['Limpeza'],
                 'data_execucao' => '2026-01-15',
             ])
             ->assertSessionHasErrors('funcionario_id');
@@ -110,7 +111,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $outro->id,
-                'descricao' => 'Limpeza',
+                'descricao' => ['Limpeza'],
                 'data_execucao' => '2026-01-15',
             ])
             ->assertRedirect();
@@ -128,7 +129,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $outro->id,
-                'descricao' => 'Limpeza',
+                'descricao' => ['Limpeza'],
                 'data_execucao' => '2026-01-15',
             ])
             ->assertForbidden();
@@ -146,7 +147,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'descricao' => 'Limpeza',
+                'descricao' => ['Limpeza'],
                 'data_execucao' => '2026-01-15',
             ])
             ->assertForbidden();
@@ -196,13 +197,13 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($user)
             ->put(route('servicos.update', $servico), [
-                'descricao' => 'Motor, Buzina',
+                'descricao' => ['Motor', 'Buzina'],
                 'observacao' => 'Troca de óleo',
             ])
             ->assertRedirect();
 
         $servico->refresh();
-        $this->assertSame('Motor, Buzina', $servico->descricao);
+        $this->assertSame(['Motor', 'Buzina'], $servico->descricao);
         $this->assertSame('Troca de óleo', $servico->observacao);
     }
 
@@ -212,7 +213,7 @@ class ServicoControllerTest extends TestCase
         $servico = Servico::factory()->create();
 
         $this->actingAs($user)
-            ->put(route('servicos.update', $servico), ['descricao' => 'Alterado'])
+            ->put(route('servicos.update', $servico), ['descricao' => ['Alterado']])
             ->assertForbidden();
     }
 
@@ -222,7 +223,7 @@ class ServicoControllerTest extends TestCase
         $servico = Servico::factory()->concluido()->create(['funcionario_id' => $funcionario->id]);
 
         $this->actingAs($user)
-            ->put(route('servicos.update', $servico), ['descricao' => 'Alterado'])
+            ->put(route('servicos.update', $servico), ['descricao' => ['Alterado']])
             ->assertForbidden();
     }
 

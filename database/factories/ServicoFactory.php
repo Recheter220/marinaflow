@@ -20,7 +20,7 @@ class ServicoFactory extends Factory
         return [
             'embarcacao_id' => Embarcacao::factory(),
             'funcionario_id' => Funcionario::factory(),
-            'descricao' => 'Limpeza, Motor',
+            'descricao' => ['Limpeza', 'Motor'],
             'data_execucao' => fake()->dateTimeBetween('-1 year')->format('Y-m-d'),
             'status' => Servico::STATUS_EM_EXECUCAO,
             'observacao' => null,

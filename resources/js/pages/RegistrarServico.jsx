@@ -30,12 +30,10 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
         e.preventDefault();
 
         post(route('servicos.store'), {
-            // O backend espera uma string; a UI trabalha com uma lista de checkboxes.
             transform: (d) => ({
                 ...d,
                 embarcacao_id: d.embarcacao_id ? Number(d.embarcacao_id) : null,
                 funcionario_id: d.funcionario_id ? Number(d.funcionario_id) : null,
-                descricao: d.descricao.join(', '),
                 data_execucao: d.data_execucao
                     ? new Date(d.data_execucao).toISOString().split('T')[0]
                     : null,

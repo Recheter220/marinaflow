@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('embarcacao_id')->constrained('embarcacoes')->cascadeOnDelete();
             $table->foreignId('funcionario_id')->constrained('funcionarios');
-            $table->text('descricao');
+            $table->json('descricao');
             $table->date('data_execucao');
             $table->string('status')->default('em_execucao');
             $table->text('observacao')->nullable();

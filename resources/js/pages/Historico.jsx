@@ -68,7 +68,7 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
     const abrirEditar = (srv) => {
         setEditando(srv);
         editForm.setValues({
-            descricao: srv.descricao ? srv.descricao.split(', ').filter((s) => s.trim() !== '') : [],
+            descricao: srv.descricao || [],
             observacao: srv.observacao || '',
             status: srv.status,
         });
@@ -79,7 +79,7 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
         router.put(
             route('servicos.update', editando.id),
             {
-                descricao: values.descricao.join(', '),
+                descricao: values.descricao,
                 observacao: values.observacao || null,
                 status: values.status,
             },
@@ -190,7 +190,7 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
                                         <Table.Td>{srv.funcionario_nome || '—'}</Table.Td>
                                         <Table.Td>
                                             <Text size="sm" lineClamp={2}>
-                                                {srv.descricao}
+                                                {srv.descricao?.join(', ')}
                                             </Text>
                                             {srv.observacao && (
                                                 <Text size="xs" c="dimmed" lineClamp={1}>

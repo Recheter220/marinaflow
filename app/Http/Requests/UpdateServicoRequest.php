@@ -15,7 +15,8 @@ class UpdateServicoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'descricao' => ['sometimes', 'required', 'string'],
+            'descricao' => ['sometimes', 'required', 'array', 'min:1'],
+            'descricao.*' => ['required', 'string'],
             'data_execucao' => ['sometimes', 'required', 'date'],
             'status' => ['sometimes', 'required', Rule::in(Servico::STATUS_EDITAVEIS)],
             'observacao' => ['nullable', 'string'],

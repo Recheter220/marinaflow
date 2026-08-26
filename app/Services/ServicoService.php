@@ -16,7 +16,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class ServicoService
 {
     /**
-     * @param  array{embarcacao_id: int, funcionario_id: int, descricao: string, data_execucao: string, observacao: ?string}  $data
+     * @param  array{embarcacao_id: int, funcionario_id: int, descricao: array<int, string>, data_execucao: string, observacao: ?string}  $data
      */
     public function criar(array $data, User $autor): Servico
     {
