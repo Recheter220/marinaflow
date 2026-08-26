@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --app-bg: #f8f9fa;
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e9ecef;
+  --header-bg: #ffffff;
+  --header-border: #e9ecef;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--app-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Page transitions */
+.page-container {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ced4da;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #adb5bd;
+}
+
+/* Status badge colors */
+.status-pendente {
+  background-color: #fff3bf;
+  color: #e67700;
+}
+
+.status-em_execucao {
+  background-color: #d0ebff;
+  color: #1864ab;
+}
+
+.status-concluido {
+  background-color: #d3f9d8;
+  color: #2b8a3e;
+}
+
+.status-ativa {
+  background-color: #d3f9d8;
+  color: #2b8a3e;
+}
+
+.status-inativa {
+  background-color: #ffe3e3;
+  color: #c92a2a;
+}
+
+.status-em_manutencao {
+  background-color: #fff3bf;
+  color: #e67700;
+}
