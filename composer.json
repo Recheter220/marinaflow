@@ -14,6 +14,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "laravel-lang/lang": "^15.34",
         "laravel/boost": "^2.6",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",

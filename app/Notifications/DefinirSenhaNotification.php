@@ -41,7 +41,7 @@ class DefinirSenhaNotification extends Notification
             ->subject($convite
                 ? 'Seu acesso ao MarinaFlow'
                 : 'Redefinição de senha — MarinaFlow')
-            ->greeting('Olá!')
+            ->greeting('Olá, ' . $notifiable->name)
             ->line($convite
                 ? 'Uma conta foi criada para você no MarinaFlow. Use o botão abaixo para definir sua senha e ativar o acesso.'
                 : 'Recebemos um pedido de redefinição de senha para esta conta.')
