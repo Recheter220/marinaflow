@@ -70,9 +70,18 @@ O seeder cria um usuário administrador para o primeiro acesso:
 - **E-mail:** `admin@marinaflow.local`
 - **Senha:** `admin123`
 
-Demais usuários são criados por convite (link enviado por e-mail). Como
-`MAIL_MAILER=log` por padrão, os e-mails de convite/redefinição de senha ficam
-gravados em `storage/logs/laravel.log` em vez de serem enviados de verdade.
+Demais usuários são criados por convite (link enviado por e-mail).
+
+### E-mails em desenvolvimento
+
+O ambiente Sail inclui o [Mailpit](https://mailpit.axllent.org/) como servidor
+SMTP local — nenhum e-mail sai de verdade da máquina. Com os containers no ar
+(`sail up -d`), os e-mails de convite/redefinição de senha ficam disponíveis
+na caixa de entrada web em [http://localhost:8025](http://localhost:8025).
+
+Os e-mails de notificação (convite/redefinição de senha) são renderizados em
+português — a aplicação roda com `APP_LOCALE=pt_BR` e traduções em `lang/pt_BR`
+(geradas pelo pacote de desenvolvimento `laravel-lang/lang`).
 
 ## Instalação (sem Docker)
 
