@@ -63,6 +63,68 @@ desktop feito em Tauri/Rust.
    definida em `APP_PORT` no `.env.example`, escolhida para não colidir com
    outros projetos rodando na porta 80 padrão do Sail).
 
+## Usando o Makefile
+
+Se preferir, você pode usar o `Makefile` para automatizar os passos principais do
+ambiente local em Linux, macOS e Windows.
+
+1. Na raiz do projeto, execute:
+
+   ```bash
+   make setup
+   ```
+
+   Esse comando cria o `.env` quando necessário, constroi os containers do Sail,
+   sobe a aplicação, instala as dependências PHP/JS, gera a chave da app e roda as
+   migrations + seed.
+
+2. Para subir apenas os containers:
+
+   ```bash
+   make up
+   ```
+
+3. Para desligar os containers:
+
+   ```bash
+   make down
+   ```
+
+4. Para reiniciar a aplicação:
+
+   ```bash
+   make restart
+   ```
+
+5. Para ver os logs:
+
+   ```bash
+   make logs
+   ```
+
+6. Para abrir um shell no container da aplicação:
+
+   ```bash
+   make shell
+   ```
+
+7. Para rodar migrations e seed manualmente:
+
+   ```bash
+   make migrate
+   make seed
+   ```
+
+8. Para instalar dependências do JavaScript ou rebuildar a imagem:
+
+   ```bash
+   make npm
+   make build
+   ```
+
+> O `Makefile` já ajusta valores de `WWWUSER` e `WWWGROUP` automaticamente para
+> funcionar corretamente em diferentes sistemas.
+
 ### Login padrão
 
 O seeder cria um usuário administrador para o primeiro acesso:
