@@ -15,6 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // A borda da Vercel encerra o TLS e repassa o esquema original em
+        // `x-forwarded-proto`. Sem confiar no proxy o Laravel monta URLs `http://`,
+        // e o cookie de sessão marcado como seguro se perde no primeiro
+        // redirecionamento. Em Sail a variável fica vazia e nada muda.
+        if ($proxies = env('TRUSTED_PROXIES')) {
+            $middleware->trustProxies(at: $proxies === '*' ? '*' : explode(',', $proxies));
+        }
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
         ]);

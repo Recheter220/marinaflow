@@ -1,0 +1,12 @@
+# O buildCommand (`npm ci && npm run build`) roda sobre estes arquivos, então
+# aqui só entra o que não é necessário nem para o build nem em runtime.
+.github
+.phpunit.cache
+database/*.sqlite
+compose.yaml
+node_modules
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+storage/logs
+tests

@@ -99,6 +99,29 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        /*
+         * O endpoint agrupado do Neon (host com sufixo `-pooler`) é um PgBouncer
+         * em transaction mode, onde `SET`, tabelas temporárias e `PREPARE` em SQL
+         * não funcionam. Migrações e comandos de manutenção falam com o host
+         * direto por esta conexão:
+         *
+         *     php artisan migrate --database=pgsql-unpooled --force
+         */
+        'pgsql-unpooled' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_URL_UNPOOLED'),
+            'host' => env('DB_HOST_UNPOOLED', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
