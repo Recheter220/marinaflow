@@ -57,8 +57,8 @@ class Funcionario extends Model
         }
 
         return $query->where(function (Builder $q) use ($termo) {
-            $q->where('nome', 'like', "%{$termo}%")
-                ->orWhere('cargo', 'like', "%{$termo}%");
+            $q->whereLike('nome', "%{$termo}%", caseSensitive: false)
+                ->orWhereLike('cargo', "%{$termo}%", caseSensitive: false);
         });
     }
 }

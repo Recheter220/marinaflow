@@ -73,9 +73,9 @@ class Embarcacao extends Model
         }
 
         return $query->where(function (Builder $q) use ($termo) {
-            $q->where('nome', 'like', "%{$termo}%")
-                ->orWhere('identificacao', 'like', "%{$termo}%")
-                ->orWhere('cliente_responsavel', 'like', "%{$termo}%");
+            $q->whereLike('nome', "%{$termo}%", caseSensitive: false)
+                ->orWhereLike('identificacao', "%{$termo}%", caseSensitive: false)
+                ->orWhereLike('cliente_responsavel', "%{$termo}%", caseSensitive: false);
         });
     }
 }
