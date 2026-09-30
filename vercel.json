@@ -47,14 +47,14 @@
         "FILESYSTEM_DISK": "local",
         "QUEUE_CONNECTION": "sync",
         "CACHE_STORE": "database",
-        "MAIL_MAILER": "log",
-        "MAIL_SCHEME": "null",
-        "MAIL_ENCRYPTION": "null",
-        "MAIL_FROM_ADDRESS": "nao-responda@marinaflow.local",
+        "MAIL_MAILER": "smtp",
+        "MAIL_SCHEME": "smtp",
         "MAIL_FROM_NAME": "MarinaFlow",
         "VITE_APP_NAME": "MarinaFlow",
         "APP_PACKAGES_CACHE": "/tmp/storage/framework/cache/packages.php",
         "APP_SERVICES_CACHE": "/tmp/storage/framework/cache/services.php",
-        "TRUSTED_PROXIES": "*"
+        "TRUSTED_PROXIES": "*",
+        "MAIL_HOST": "smtp.gmail.com",
+        "MAIL_PORT": "587"
     }
 }
