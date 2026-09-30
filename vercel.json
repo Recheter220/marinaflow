@@ -11,8 +11,22 @@
         }
     },
     "routes": [
-        { "handle": "filesystem" },
-        { "src": "/(.*)", "dest": "/api/index.php" }
+        {
+            "src": "/build/(.*)",
+            "dest": "/build/$1"
+        },
+        {
+            "src": "/favicon\\.ico",
+            "dest": "/favicon.ico"
+        },
+        {
+            "src": "/robots\\.txt",
+            "dest": "/robots.txt"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/api/index.php"
+        }
     ],
     "env": {
         "APP_NAME": "MarinaFlow",
@@ -38,6 +52,9 @@
         "MAIL_ENCRYPTION": "null",
         "MAIL_FROM_ADDRESS": "nao-responda@marinaflow.local",
         "MAIL_FROM_NAME": "MarinaFlow",
-        "VITE_APP_NAME": "MarinaFlow"
+        "VITE_APP_NAME": "MarinaFlow",
+        "APP_PACKAGES_CACHE": "/tmp/storage/framework/cache/packages.php",
+        "APP_SERVICES_CACHE": "/tmp/storage/framework/cache/services.php",
+        "TRUSTED_PROXIES": "*"
     }
 }
