@@ -3,21 +3,6 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
-/*
- * Contorno de SNI do Neon. O Neon roteia a conexão pelo nome de domínio, que o
- * protocolo do PostgreSQL não transporta — ele depende da extensão SNI do TLS.
- * O libpq embutido no runtime serverless não a envia, e a conexão falha com
- * "Endpoint ID is not specified". Prefixar a senha é o contorno que o Neon
- * documenta para clientes sem SNI.
- *
- * O identificador é a primeira parte do domínio *sem* o sufixo `-pooler`, mesmo
- * quando a conexão usa o host agrupado. Deixe `DB_NEON_ENDPOINT` vazia em
- * desenvolvimento: o libpq do Sail envia SNI e nada muda.
- */
-$senhaPostgres = ($endpointNeon = env('DB_NEON_ENDPOINT'))
-    ? 'endpoint='.$endpointNeon.';'.env('DB_PASSWORD')
-    : env('DB_PASSWORD', '');
-
 return [
 
     /*
@@ -106,7 +91,7 @@ return [
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
-            'password' => $senhaPostgres,
+            'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
@@ -120,7 +105,7 @@ return [
          * não funcionam. Migrações e comandos de manutenção falam com o host
          * direto por esta conexão:
          *
-         *     php artisan migrate --database=pgsql-unpooled --force
+         *     ./vendor/bin/sail artisan migrate --database=pgsql-unpooled --force
          */
         'pgsql-unpooled' => [
             'driver' => 'pgsql',
@@ -129,7 +114,7 @@ return [
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
-            'password' => $senhaPostgres,
+            'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
