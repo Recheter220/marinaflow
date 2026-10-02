@@ -20,6 +20,10 @@ Route::middleware('guest')->group(function () {
     // Destino do link de convite e de redefinição — o mesmo broker atende os dois.
     Route::get('/definir-senha/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('/definir-senha', [NewPasswordController::class, 'store'])->name('password.store');
+
+    Route::get('info', function () {
+        phpinfo();
+    });
 });
 
 Route::middleware(['auth', 'ativo'])->group(function () {
