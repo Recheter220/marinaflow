@@ -196,6 +196,63 @@ finalizar alterações em arquivos PHP, rode:
 
 (ou `vendor/bin/pint --dirty`, sem Sail)
 
+## Fluxo de trabalho no Git
+
+**Commit direto na `main` é proibido.** A `main` só avança por merge de pull
+request. Enquanto a proteção de branch no GitHub não estiver ligada (RF-01.4 da
+[MF-01](docs/specs/MF-01.md)), a regra vale por acordo — ligá-la é o que a torna
+mecânica.
+
+### Branches
+
+Uma branch por especificação de `docs/specs/`:
+
+```
+feature/MF-04        # trabalho da spec MF-04
+```
+
+Para trabalho sem história associada, `fix/<slug>` ou `chore/<slug>` — o
+repositório já tem precedente em `chore/add-makefile`.
+
+### Commits semânticos
+
+O padrão é [Conventional Commits](https://www.conventionalcommits.org), com o
+identificador da spec como escopo:
+
+```
+<tipo>(MF-XX): assunto no imperativo
+
+Corpo opcional, explicando o porquê da mudança. O diff já mostra o quê;
+o que se perde com o tempo é a razão.
+
+BREAKING CHANGE: descrição, quando houver.
+```
+
+Tipos aceitos: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`, `perf`,
+`style`, `build`, `revert`. O escopo é omitido quando a mudança não pertence a
+nenhuma spec.
+
+Assunto no imperativo, minúsculo, sem ponto final, até 72 caracteres. O histórico
+do repositório está em inglês — manter.
+
+Exemplos tirados do próprio projeto:
+
+```
+feat(MF-04): store service photos on the private disk
+fix(MF-02): make search scopes case-insensitive on PostgreSQL
+docs(MF-13): record the Neon SNI workaround
+test(MF-01): cover admin-only buttons in Embarcacoes
+chore: add Makefile targets for the test suites
+```
+
+### Pull request
+
+- Título no mesmo padrão do commit.
+- Corpo com link para a spec correspondente em `docs/specs/`.
+- CI verde é condição de merge (MF-01).
+- A [definição de pronto](docs/specs/README.md#definição-de-pronto) vale para
+  todo PR: Pint limpo, suíte verde, teste cobrindo a mudança.
+
 ## Estrutura do projeto
 
 - `app/Http/Controllers` — controllers HTTP

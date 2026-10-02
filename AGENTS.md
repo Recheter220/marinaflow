@@ -45,3 +45,18 @@ php artisan boost:install
 
 Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
 </laravel-boost-guidelines>
+
+## Git — regra do projeto
+
+- **Commit direto na `main` é proibido.** A `main` só recebe merge de pull request.
+- Todo desenvolvimento sai em branch própria: **`feature/MF-XX`**, uma por spec de
+  `docs/specs/` (ex.: `feature/MF-04`). Trabalho sem história associada usa
+  `fix/<slug>` ou `chore/<slug>`.
+- Commits seguem **Conventional Commits**, com o identificador da spec como escopo:
+  `feat(MF-04): store service photos on the private disk`. Tipos: `feat`, `fix`,
+  `docs`, `refactor`, `test`, `chore`, `ci`, `perf`, `style`, `build`, `revert`.
+  Assunto no imperativo, minúsculo, sem ponto final. O histórico do repositório
+  está em inglês — manter.
+- O corpo do commit explica o **porquê**, não o quê; o diff já diz o quê.
+
+Detalhes e exemplos em [README.md](README.md#fluxo-de-trabalho-no-git).
