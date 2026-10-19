@@ -60,6 +60,34 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Fotos de serviço. Em produção aponta para o Cloudflare R2 (D-09);
+         * sem `FOTOS_DISK_DRIVER=s3` cai para o disco local, servido por URL
+         * assinada em `/arquivos/fotos`. As duas configurações ficam separadas
+         * porque o driver S3 também lê `root` e `url`, e prefixaria o caminho
+         * local em toda chave do bucket.
+         */
+        'fotos' => env('FOTOS_DISK_DRIVER', 'local') === 's3' ? [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('AWS_BUCKET'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', true),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ] : [
+            'driver' => 'local',
+            'root' => storage_path('app/private/fotos'),
+            'serve' => true,
+            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/arquivos/fotos',
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*
