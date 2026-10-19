@@ -158,6 +158,13 @@ assinada, válida por 15 minutos.
 URL assinada em `/arquivos/fotos`. Os testes sempre rodam nesse modo, porque o
 `phpunit.xml` força `fotos-local`.
 
+A exceção é o grupo `r2` (`tests/Feature/ArquivoServiceR2Test.php`), que grava,
+lê e apaga arquivos reais no bucket. Ele fica fora da suíte padrão e roda com
+`php artisan test --group=r2`, usando as credenciais `AWS_*` do `.env`; sem
+elas, os testes são pulados. Tudo vai para a pasta `tests/` do bucket e é
+apagado ao fim de cada teste, então qualquer resto ali é de uma execução
+interrompida e pode ser removido.
+
 **Em produção** o disco aponta para o bucket `marinaflow` no Cloudflare R2. As
 credenciais saem do painel da Cloudflare, em **R2 Object Storage → Account
 Details → API Tokens → Manage → Create API token**, com permissão
