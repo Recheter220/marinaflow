@@ -145,6 +145,36 @@ Os e-mails de notificação (convite/redefinição de senha) são renderizados e
 português — a aplicação roda com `APP_LOCALE=pt_BR` e traduções em `lang/pt_BR`
 (geradas pelo pacote de desenvolvimento `laravel-lang/lang`).
 
+### Armazenamento de arquivos
+
+As fotos de serviço ficam no disco `fotos`, e o código só acessa esse disco pelo
+`App\Services\ArquivoService`, nunca pelo `Storage` direto. O bucket é privado:
+a leitura é sempre por URL temporária assinada, válida por 15 minutos.
+
+**Localmente** não é preciso credencial nenhuma. Com `FOTOS_DISK_DRIVER=local`
+(o padrão), os arquivos vão para `storage/app/private/fotos` e são servidos por
+URL assinada em `/arquivos/fotos`. Os testes sempre rodam nesse modo
+(`phpunit.xml` força o driver local) e usam `Storage::fake('fotos')`.
+
+**Em produção** o disco aponta para o bucket `marinaflow` no Cloudflare R2. As
+credenciais saem do painel da Cloudflare, em **R2 Object Storage → Account
+Details → API Tokens → Manage → Create API token**, com permissão
+*Object Read & Write* restrita ao bucket `marinaflow`. O *Secret Access Key* só
+aparece uma vez, na criação do token.
+
+```dotenv
+FOTOS_DISK_DRIVER=s3
+AWS_ACCESS_KEY_ID=<Access Key ID>
+AWS_SECRET_ACCESS_KEY=<Secret Access Key>
+AWS_DEFAULT_REGION=auto          # única região que o R2 aceita
+AWS_BUCKET=marinaflow
+AWS_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com   # sem o nome do bucket
+AWS_USE_PATH_STYLE_ENDPOINT=true
+```
+
+Evite `FOTOS_DISK_DRIVER=s3` no ambiente de desenvolvimento: o bucket é o de
+produção.
+
 ## Instalação (sem Docker)
 
 1. Copie o `.env` e instale as dependências:
