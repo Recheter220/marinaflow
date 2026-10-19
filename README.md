@@ -147,14 +147,16 @@ português — a aplicação roda com `APP_LOCALE=pt_BR` e traduções em `lang/
 
 ### Armazenamento de arquivos
 
-As fotos de serviço ficam no disco `fotos`, e o código só acessa esse disco pelo
-`App\Services\ArquivoService`, nunca pelo `Storage` direto. O bucket é privado:
-a leitura é sempre por URL temporária assinada, válida por 15 minutos.
+As fotos de serviço passam sempre pelo `App\Services\ArquivoService`, nunca
+pelo `Storage` direto. O disco usado vem de `FOTOS_DISK`, e há dois em
+`config/filesystems.php`: `fotos` (Cloudflare R2) e `fotos-local`. Nos dois
+casos os arquivos são privados, e a leitura é sempre por URL temporária
+assinada, válida por 15 minutos.
 
-**Localmente** não é preciso credencial nenhuma. Com `FOTOS_DISK_DRIVER=local`
+**Localmente** não é preciso credencial nenhuma. Com `FOTOS_DISK=fotos-local`
 (o padrão), os arquivos vão para `storage/app/private/fotos` e são servidos por
-URL assinada em `/arquivos/fotos`. Os testes sempre rodam nesse modo
-(`phpunit.xml` força o driver local) e usam `Storage::fake('fotos')`.
+URL assinada em `/arquivos/fotos`. Os testes sempre rodam nesse modo, porque o
+`phpunit.xml` força `fotos-local`.
 
 **Em produção** o disco aponta para o bucket `marinaflow` no Cloudflare R2. As
 credenciais saem do painel da Cloudflare, em **R2 Object Storage → Account
@@ -163,7 +165,7 @@ Details → API Tokens → Manage → Create API token**, com permissão
 aparece uma vez, na criação do token.
 
 ```dotenv
-FOTOS_DISK_DRIVER=s3
+FOTOS_DISK=fotos
 AWS_ACCESS_KEY_ID=<Access Key ID>
 AWS_SECRET_ACCESS_KEY=<Secret Access Key>
 AWS_DEFAULT_REGION=auto          # única região que o R2 aceita
@@ -172,7 +174,7 @@ AWS_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com   # sem o nome do buc
 AWS_USE_PATH_STYLE_ENDPOINT=true
 ```
 
-Evite `FOTOS_DISK_DRIVER=s3` no ambiente de desenvolvimento: o bucket é o de
+Evite `FOTOS_DISK=fotos` no ambiente de desenvolvimento: o bucket é o de
 produção.
 
 ## Instalação (sem Docker)

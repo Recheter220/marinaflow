@@ -7,15 +7,14 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Único ponto da aplicação que fala com o disco `fotos` — controllers gravam,
+ * Único ponto da aplicação que fala com o disco de fotos — controllers gravam,
  * servem e removem arquivos por aqui, nunca pelo `Storage` direto (RF-03.4).
+ * O disco vem de `filesystems.fotos_disk`: `fotos` (R2) ou `fotos-local`.
  *
- * O bucket é privado: leitura só por URL temporária assinada (RF-03.3).
+ * Os arquivos são privados: leitura só por URL temporária assinada (RF-03.3).
  */
 class ArquivoService
 {
-    private const DISCO = 'fotos';
-
     /**
      * Grava o arquivo com nome gerado e devolve o caminho relativo ao disco.
      */
@@ -36,6 +35,6 @@ class ArquivoService
 
     private function disco(): Filesystem
     {
-        return Storage::disk(self::DISCO);
+        return Storage::disk(config('filesystems.fotos_disk'));
     }
 }

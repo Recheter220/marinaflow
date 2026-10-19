@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Service Photos Disk
+    |--------------------------------------------------------------------------
+    |
+    | Disk used by the ArquivoService for service photos. Production points
+    | at "fotos" (Cloudflare R2); development and tests use "fotos-local",
+    | which needs no credentials and is served through signed URLs.
+    |
+    */
+
+    'fotos_disk' => env('FOTOS_DISK', 'fotos-local'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -60,14 +73,7 @@ return [
             'report' => false,
         ],
 
-        /*
-         * Fotos de serviço. Em produção aponta para o Cloudflare R2 (D-09);
-         * sem `FOTOS_DISK_DRIVER=s3` cai para o disco local, servido por URL
-         * assinada em `/arquivos/fotos`. As duas configurações ficam separadas
-         * porque o driver S3 também lê `root` e `url`, e prefixaria o caminho
-         * local em toda chave do bucket.
-         */
-        'fotos' => env('FOTOS_DISK_DRIVER', 'local') === 's3' ? [
+        'fotos' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),
@@ -78,7 +84,9 @@ return [
             'visibility' => 'private',
             'throw' => true,
             'report' => false,
-        ] : [
+        ],
+
+        'fotos-local' => [
             'driver' => 'local',
             'root' => storage_path('app/private/fotos'),
             'serve' => true,
