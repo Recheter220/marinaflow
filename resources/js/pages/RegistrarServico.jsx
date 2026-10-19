@@ -48,7 +48,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                 setSucesso(true);
                 notifications.show({
                     title: 'Serviço registrado',
-                    message: "O serviço foi registrado e está 'Em Execução'",
+                    message: 'Serviço registrado / Pendente de vistoria',
                     color: 'green',
                     icon: <IconCheck size={16} />,
                 });
@@ -86,7 +86,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                     withCloseButton
                     onClose={() => setSucesso(false)}
                 >
-                    O serviço foi iniciado e já está disponível no histórico.
+                    Serviço registrado / Pendente de Vistoria. Já disponível no Histórico.
                 </Alert>
             )}
 
@@ -180,7 +180,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                                     Limpar
                                 </Button>
                                 <Button type="submit" loading={processing}>
-                                    Registrar e Iniciar Serviço
+                                    Serviço Registrado
                                 </Button>
                             </Group>
                         </Stack>
