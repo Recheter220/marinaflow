@@ -12,6 +12,7 @@ import { SERVICO_OPTION_COLUMNS } from '@/utils/servicos';
 
 const STATUS_CONFIG = {
     em_execucao: { label: 'Em Execução', color: 'blue' },
+    aguardando_vistoria: { label: 'Aguardando Vistoria', color: 'yellow' },
     concluido: { label: 'Concluído', color: 'green' },
 };
 
@@ -81,7 +82,7 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
             {
                 descricao: values.descricao,
                 observacao: values.observacao || null,
-                status: values.status,
+                ...(values.status !== editando.status ? { status: values.status } : {}),
             },
             {
                 preserveScroll: true,
@@ -118,7 +119,16 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
     const podeEditar = (srv) =>
         isAdmin || (srv.status !== 'concluido' && srv.funcionario_id === funcionarioId);
 
-    const podeConcluir = (srv) => isAdmin && srv.status === 'em_execucao';
+    const podeConcluir = (srv) =>
+        isAdmin && ['em_execucao', 'aguardando_vistoria'].includes(srv.status);
+
+    const statusOptions = [
+        ...(editando?.status === 'em_execucao'
+            ? [{ value: 'em_execucao', label: STATUS_CONFIG.em_execucao.label }]
+            : []),
+        { value: 'aguardando_vistoria', label: STATUS_CONFIG.aguardando_vistoria.label },
+        ...(isAdmin ? [{ value: 'concluido', label: STATUS_CONFIG.concluido.label }] : []),
+    ];
 
     const embarcacaoOptions = embarcacoes.map((e) => ({
         value: String(e.id),
@@ -275,13 +285,11 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
 
                         <Textarea label="Observações" minRows={3} {...editForm.getInputProps('observacao')} />
 
-                        {isAdmin && editando?.status !== 'concluido' && (
+                        {isAdmin && editando && editando.status !== 'concluido' && (
                             <Select
                                 label="Alterar Status"
-                                data={[
-                                    { value: 'em_execucao', label: 'Em Execução' },
-                                    { value: 'concluido', label: 'Concluído' },
-                                ]}
+                                data={statusOptions}
+                                allowDeselect={false}
                                 {...editForm.getInputProps('status')}
                             />
                         )}

@@ -76,7 +76,7 @@ class ServicoController extends Controller
     {
         $this->servicos->criar($request->validated(), $request->user());
 
-        return back()->with('success', "Serviço registrado e está 'Em Execução'.");
+        return back()->with('success', "Serviço registrado e está 'Aguardando Vistoria'.");
     }
 
     public function update(UpdateServicoRequest $request, Servico $servico): RedirectResponse

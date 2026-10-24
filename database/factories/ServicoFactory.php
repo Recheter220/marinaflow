@@ -22,7 +22,7 @@ class ServicoFactory extends Factory
             'funcionario_id' => Funcionario::factory(),
             'descricao' => ['Limpeza', 'Motor'],
             'data_execucao' => fake()->dateTimeBetween('-1 year')->format('Y-m-d'),
-            'status' => Servico::STATUS_EM_EXECUCAO,
+            'status' => Servico::STATUS_AGUARDANDO_VISTORIA,
             'observacao' => null,
         ];
     }

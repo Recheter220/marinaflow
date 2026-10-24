@@ -16,6 +16,8 @@ class GuardAdminTest extends TestCase
 
     public function test_admin_acessa_gestao_de_usuarios(): void
     {
+        $this->withoutVite();
+
         $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin)->get('/usuarios')->assertOk();

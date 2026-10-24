@@ -48,7 +48,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                 setSucesso(true);
                 notifications.show({
                     title: 'Serviço registrado',
-                    message: 'Serviço registrado / Pendente de vistoria',
+                    message: 'Serviço registrado / Aguardando Vistoria',
                     color: 'green',
                     icon: <IconCheck size={16} />,
                 });
@@ -86,7 +86,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                     withCloseButton
                     onClose={() => setSucesso(false)}
                 >
-                    Serviço registrado / Pendente de Vistoria. Já disponível no Histórico.
+                    Serviço registrado / Aguardando Vistoria. Já disponível no Histórico.
                 </Alert>
             )}
 

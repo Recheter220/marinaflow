@@ -14,6 +14,8 @@ class EmbarcacaoControllerTest extends TestCase
 
     public function test_admin_lista_todas_as_embarcacoes(): void
     {
+        $this->withoutVite();
+
         $admin = User::factory()->admin()->create();
         Embarcacao::factory()->count(3)->create();
 
@@ -28,6 +30,8 @@ class EmbarcacaoControllerTest extends TestCase
     /** `embarcacao_service::listar` — funcionário só enxerga o que está vinculado a ele. */
     public function test_funcionario_lista_apenas_as_proprias_embarcacoes(): void
     {
+        $this->withoutVite();
+
         $funcionario = Funcionario::factory()->create();
         $outro = Funcionario::factory()->create();
         $user = User::factory()->create(['funcionario_id' => $funcionario->id]);
@@ -46,6 +50,8 @@ class EmbarcacaoControllerTest extends TestCase
 
     public function test_busca_filtra_por_nome_identificacao_ou_cliente(): void
     {
+        $this->withoutVite();
+
         $admin = User::factory()->admin()->create();
         Embarcacao::factory()->create(['nome' => 'Netuno', 'identificacao' => 'BR-0001-AAA']);
         Embarcacao::factory()->create(['nome' => 'Poseidon', 'identificacao' => 'BR-0002-BBB']);

@@ -90,6 +90,8 @@ class AutenticacaoTest extends TestCase
     /** Quem foi desativado durante a sessão é derrubado no próximo request. */
     public function test_sessao_de_usuario_desativado_e_encerrada(): void
     {
+        $this->withoutVite();
+
         $user = User::factory()->create();
 
         $this->actingAs($user)->get(route('embarcacoes.index'))->assertOk();

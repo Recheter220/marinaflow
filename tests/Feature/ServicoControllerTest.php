@@ -6,6 +6,7 @@ use App\Models\Embarcacao;
 use App\Models\Funcionario;
 use App\Models\Servico;
 use App\Models\User;
+use App\Services\ServicoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -31,9 +32,57 @@ class ServicoControllerTest extends TestCase
 
         $servico = Servico::query()->firstOrFail();
         $this->assertSame(['Limpeza', 'Motor'], $servico->descricao);
-        $this->assertSame(Servico::STATUS_EM_EXECUCAO, $servico->status);
+        $this->assertSame(Servico::STATUS_AGUARDANDO_VISTORIA, $servico->status);
         $this->assertSame($admin->id, $servico->created_by_user_id);
         $this->assertSame($admin->id, $servico->updated_by_user_id);
+    }
+
+    public function test_status_inicial_enviado_pelo_cliente_e_ignorado_para_ambos_os_papeis(): void
+    {
+        [$funcionarioUser, $funcionario] = $this->funcionarioLogado();
+        $admin = User::factory()->admin()->create();
+        $embarcacao = Embarcacao::factory()->doFuncionario($funcionario)->create();
+
+        foreach ([$admin, $funcionarioUser] as $autor) {
+            foreach ([Servico::STATUS_EM_EXECUCAO, Servico::STATUS_CONCLUIDO, 'invalido'] as $status) {
+                $this->actingAs($autor)
+                    ->post(route('servicos.store'), [
+                        'embarcacao_id' => $embarcacao->id,
+                        'funcionario_id' => $funcionario->id,
+                        'descricao' => ['Limpeza'],
+                        'data_execucao' => '2026-01-15',
+                        'status' => $status,
+                    ])
+                    ->assertRedirect()
+                    ->assertSessionHasNoErrors()
+                    ->assertSessionHas('success', "Serviço registrado e está 'Aguardando Vistoria'.");
+
+                $servico = Servico::query()->latest('id')->firstOrFail();
+                $this->assertSame(Servico::STATUS_AGUARDANDO_VISTORIA, $servico->status);
+                $this->assertSame($autor->id, $servico->created_by_user_id);
+            }
+        }
+
+        $this->assertDatabaseCount('servicos', 6);
+    }
+
+    public function test_service_sobrescreve_status_inicial_mesmo_sem_form_request(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $funcionario = Funcionario::factory()->create();
+        $embarcacao = Embarcacao::factory()->create();
+
+        foreach ([Servico::STATUS_EM_EXECUCAO, Servico::STATUS_CONCLUIDO] as $status) {
+            $servico = app(ServicoService::class)->criar([
+                'embarcacao_id' => $embarcacao->id,
+                'funcionario_id' => $funcionario->id,
+                'descricao' => ['Limpeza'],
+                'data_execucao' => '2026-01-15',
+                'status' => $status,
+            ], $admin);
+
+            $this->assertSame(Servico::STATUS_AGUARDANDO_VISTORIA, $servico->refresh()->status);
+        }
     }
 
     /** INV01 — serviço sem embarcação não existe. */
@@ -116,7 +165,9 @@ class ServicoControllerTest extends TestCase
             ])
             ->assertRedirect();
 
-        $this->assertSame($funcionario->id, Servico::query()->firstOrFail()->funcionario_id);
+        $servico = Servico::query()->firstOrFail();
+        $this->assertSame($funcionario->id, $servico->funcionario_id);
+        $this->assertSame(Servico::STATUS_AGUARDANDO_VISTORIA, $servico->status);
     }
 
     public function test_funcionario_nao_registra_servico_em_embarcacao_de_outro(): void
@@ -193,7 +244,10 @@ class ServicoControllerTest extends TestCase
     public function test_funcionario_edita_o_proprio_servico_em_execucao(): void
     {
         [$user, $funcionario] = $this->funcionarioLogado();
-        $servico = Servico::factory()->create(['funcionario_id' => $funcionario->id]);
+        $servico = Servico::factory()->create([
+            'funcionario_id' => $funcionario->id,
+            'status' => Servico::STATUS_EM_EXECUCAO,
+        ]);
 
         $this->actingAs($user)
             ->put(route('servicos.update', $servico), [
@@ -205,6 +259,7 @@ class ServicoControllerTest extends TestCase
         $servico->refresh();
         $this->assertSame(['Motor', 'Buzina'], $servico->descricao);
         $this->assertSame('Troca de óleo', $servico->observacao);
+        $this->assertSame(Servico::STATUS_EM_EXECUCAO, $servico->status);
     }
 
     public function test_funcionario_nao_edita_servico_de_outro(): void
@@ -236,7 +291,7 @@ class ServicoControllerTest extends TestCase
             ->put(route('servicos.update', $servico), ['status' => Servico::STATUS_CONCLUIDO])
             ->assertForbidden();
 
-        $this->assertSame(Servico::STATUS_EM_EXECUCAO, $servico->refresh()->status);
+        $this->assertSame(Servico::STATUS_AGUARDANDO_VISTORIA, $servico->refresh()->status);
     }
 
     public function test_funcionario_nao_reatribui_servico(): void
@@ -254,6 +309,8 @@ class ServicoControllerTest extends TestCase
 
     public function test_admin_ve_o_historico_completo(): void
     {
+        $this->withoutVite();
+
         $admin = User::factory()->admin()->create();
         Servico::factory()->count(3)->create();
 
@@ -267,6 +324,8 @@ class ServicoControllerTest extends TestCase
 
     public function test_funcionario_ve_apenas_os_proprios_servicos_no_historico(): void
     {
+        $this->withoutVite();
+
         [$user, $funcionario] = $this->funcionarioLogado();
         Servico::factory()->create(['funcionario_id' => $funcionario->id]);
         Servico::factory()->count(2)->create();
@@ -279,6 +338,8 @@ class ServicoControllerTest extends TestCase
 
     public function test_historico_filtra_por_embarcacao(): void
     {
+        $this->withoutVite();
+
         $admin = User::factory()->admin()->create();
         $embarcacao = Embarcacao::factory()->create();
         Servico::factory()->create(['embarcacao_id' => $embarcacao->id]);
