@@ -145,6 +145,45 @@ Os e-mails de notificação (convite/redefinição de senha) são renderizados e
 português — a aplicação roda com `APP_LOCALE=pt_BR` e traduções em `lang/pt_BR`
 (geradas pelo pacote de desenvolvimento `laravel-lang/lang`).
 
+### Armazenamento de arquivos
+
+As fotos de serviço passam sempre pelo `App\Services\ArquivoService`, nunca
+pelo `Storage` direto. O disco usado vem de `FOTOS_DISK`, e há dois em
+`config/filesystems.php`: `fotos` (Cloudflare R2) e `fotos-local`. Nos dois
+casos os arquivos são privados, e a leitura é sempre por URL temporária
+assinada, válida por 15 minutos.
+
+**Localmente** não é preciso credencial nenhuma. Com `FOTOS_DISK=fotos-local`
+(o padrão), os arquivos vão para `storage/app/private/fotos` e são servidos por
+URL assinada em `/arquivos/fotos`. Os testes sempre rodam nesse modo, porque o
+`phpunit.xml` força `fotos-local`.
+
+A exceção é o grupo `r2` (`tests/Feature/ArquivoServiceR2Test.php`), que grava,
+lê e apaga arquivos reais no bucket. Ele fica fora da suíte padrão e roda com
+`php artisan test --group=r2`, usando as credenciais `AWS_*` do `.env`; sem
+elas, os testes são pulados. Tudo vai para a pasta `tests/` do bucket e é
+apagado ao fim de cada teste, então qualquer resto ali é de uma execução
+interrompida e pode ser removido.
+
+**Em produção** o disco aponta para o bucket `marinaflow` no Cloudflare R2. As
+credenciais saem do painel da Cloudflare, em **R2 Object Storage → Account
+Details → API Tokens → Manage → Create API token**, com permissão
+*Object Read & Write* restrita ao bucket `marinaflow`. O *Secret Access Key* só
+aparece uma vez, na criação do token.
+
+```dotenv
+FOTOS_DISK=fotos
+AWS_ACCESS_KEY_ID=<Access Key ID>
+AWS_SECRET_ACCESS_KEY=<Secret Access Key>
+AWS_DEFAULT_REGION=auto          # única região que o R2 aceita
+AWS_BUCKET=marinaflow
+AWS_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com   # sem o nome do bucket
+AWS_USE_PATH_STYLE_ENDPOINT=true
+```
+
+Evite `FOTOS_DISK=fotos` no ambiente de desenvolvimento: o bucket é o de
+produção.
+
 ## Instalação (sem Docker)
 
 1. Copie o `.env` e instale as dependências:
