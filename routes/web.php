@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\EmbarcacaoController;
 use App\Http\Controllers\FuncionarioController;
 use App\Http\Controllers\ServicoController;
+use App\Http\Controllers\ServicoFotoController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,10 @@ Route::middleware(['auth', 'ativo'])->group(function () {
     Route::post('/servicos', [ServicoController::class, 'store'])->name('servicos.store');
     Route::get('/historico', [ServicoController::class, 'index'])->name('servicos.index');
     Route::put('/servicos/{servico}', [ServicoController::class, 'update'])->name('servicos.update');
+
+    Route::post('/servicos/{servico}/fotos', [ServicoFotoController::class, 'store'])->name('servicos.fotos.store');
+    Route::get('/servicos/fotos/{foto}', [ServicoFotoController::class, 'show'])->name('servicos.fotos.show');
+    Route::delete('/servicos/fotos/{foto}', [ServicoFotoController::class, 'destroy'])->name('servicos.fotos.destroy');
 
     Route::get('/trocar-senha', [PasswordController::class, 'edit'])->name('senha.edit');
     Route::put('/trocar-senha', [PasswordController::class, 'update'])->name('senha.update');
