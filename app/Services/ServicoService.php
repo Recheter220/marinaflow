@@ -82,6 +82,29 @@ class ServicoService
     }
 
     /**
+     * Regra de autoria: administrador mexe em qualquer serviço; funcionário só
+     * nos próprios, ainda não concluídos. Também vale para as fotos (INV05).
+     */
+    public function autorizarAutoria(Servico $servico, User $autor): void
+    {
+        if ($autor->isAdmin()) {
+            return;
+        }
+
+        if ($servico->funcionario_id !== $this->funcionarioDoUsuario($autor)) {
+            throw new AccessDeniedHttpException(
+                'Acesso negado. Você só pode editar seus próprios serviços.',
+            );
+        }
+
+        if ($servico->status === Servico::STATUS_CONCLUIDO) {
+            throw new AccessDeniedHttpException(
+                'Serviços concluídos não podem ser editados por funcionários.',
+            );
+        }
+    }
+
+    /**
      * Funcionário edita apenas os próprios serviços, ainda não concluídos, sem
      * poder alterar o status nem reatribuí-los.
      *
@@ -93,19 +116,9 @@ class ServicoService
         ?string $novoStatus,
         User $autor,
     ): void {
+        $this->autorizarAutoria($servico, $autor);
+
         $funcionarioId = $this->funcionarioDoUsuario($autor);
-
-        if ($servico->funcionario_id !== $funcionarioId) {
-            throw new AccessDeniedHttpException(
-                'Acesso negado. Você só pode editar seus próprios serviços.',
-            );
-        }
-
-        if ($servico->status === Servico::STATUS_CONCLUIDO) {
-            throw new AccessDeniedHttpException(
-                'Serviços concluídos não podem ser editados por funcionários.',
-            );
-        }
 
         if ($novoStatus === Servico::STATUS_CONCLUIDO) {
             throw new AccessDeniedHttpException(
