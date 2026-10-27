@@ -42,7 +42,7 @@ class ServicoService
 
         return Servico::query()->create([
             ...$data,
-            'status' => Servico::STATUS_EM_EXECUCAO,
+            'status' => Servico::STATUS_AGUARDANDO_VISTORIA,
             'created_by_user_id' => $autor->id,
             'updated_by_user_id' => $autor->id,
         ]);
@@ -68,6 +68,14 @@ class ServicoService
             ]);
         }
 
+        // O legado pode ser reenviado sem mudança, mas não é destino de transição.
+        if ($novoStatus === Servico::STATUS_EM_EXECUCAO
+            && $servico->status !== Servico::STATUS_EM_EXECUCAO) {
+            throw ValidationException::withMessages([
+                'status' => 'Serviço não pode retornar ao status em execução.',
+            ]);
+        }
+
         $servico->update([...$data, 'updated_by_user_id' => $autor->id]);
 
         return $servico;
@@ -75,7 +83,7 @@ class ServicoService
 
     /**
      * Funcionário edita apenas os próprios serviços, ainda não concluídos, sem
-     * poder concluí-los nem reatribuí-los.
+     * poder alterar o status nem reatribuí-los.
      *
      * @param  array<string, mixed>  $data
      */
@@ -102,6 +110,12 @@ class ServicoService
         if ($novoStatus === Servico::STATUS_CONCLUIDO) {
             throw new AccessDeniedHttpException(
                 'Somente administradores podem concluir serviços.',
+            );
+        }
+
+        if ($novoStatus !== null && $novoStatus !== $servico->status) {
+            throw new AccessDeniedHttpException(
+                'Somente administradores podem alterar o status dos serviços.',
             );
         }
 

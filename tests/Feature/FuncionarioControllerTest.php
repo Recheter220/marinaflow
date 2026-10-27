@@ -15,6 +15,8 @@ class FuncionarioControllerTest extends TestCase
 
     public function test_usuario_autenticado_lista_funcionarios(): void
     {
+        $this->withoutVite();
+
         $user = User::factory()->create();
         Funcionario::factory()->count(2)->create();
 
@@ -28,6 +30,8 @@ class FuncionarioControllerTest extends TestCase
 
     public function test_busca_filtra_por_nome_ou_cargo(): void
     {
+        $this->withoutVite();
+
         $user = User::factory()->create();
         Funcionario::factory()->create(['nome' => 'João Silva', 'cargo' => 'Mecânico']);
         Funcionario::factory()->create(['nome' => 'Maria Souza', 'cargo' => 'Pintor']);

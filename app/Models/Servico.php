@@ -26,10 +26,16 @@ class Servico extends Model
 
     public const STATUS_EM_EXECUCAO = 'em_execucao';
 
+    public const STATUS_AGUARDANDO_VISTORIA = 'aguardando_vistoria';
+
     public const STATUS_CONCLUIDO = 'concluido';
 
-    /** Os únicos status que uma atualização pode pedir (`pendente` saiu do domínio). */
-    public const STATUS_EDITAVEIS = [self::STATUS_EM_EXECUCAO, self::STATUS_CONCLUIDO];
+    /** Valores aceitos no payload; as transições são validadas em ServicoService. */
+    public const STATUS_EDITAVEIS = [
+        self::STATUS_EM_EXECUCAO,
+        self::STATUS_AGUARDANDO_VISTORIA,
+        self::STATUS_CONCLUIDO,
+    ];
 
     /**
      * @return array<string, string>
