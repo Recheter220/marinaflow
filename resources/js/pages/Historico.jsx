@@ -8,6 +8,9 @@ import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconHistory, IconDotsVertical, IconCheck, IconShip, IconEdit } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
+import CampoFotos from '@/components/CampoFotos';
+import GaleriaFotos from '@/components/GaleriaFotos';
+import { LIMITE_FOTOS_POR_SERVICO, useEnvioFotos } from '@/utils/fotos';
 import { SERVICO_OPTION_COLUMNS } from '@/utils/servicos';
 
 const STATUS_CONFIG = {
@@ -43,6 +46,11 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
 
     const [editando, setEditando] = useState(null);
     const [salvando, setSalvando] = useState(false);
+    const [fotosNovas, setFotosNovas] = useState([]);
+    const envioFotos = useEnvioFotos();
+    // As fotos mudam a cada envio/remoção; a cópia em `editando` ficaria velha.
+    const fotosEditando = servicos.find((s) => s.id === editando?.id)?.fotos ?? [];
+    const fotosNovasExcedem = fotosNovas.length > Math.min(10, LIMITE_FOTOS_POR_SERVICO - fotosEditando.length);
     const embarcacaoSelecionada = filtros.embarcacao_id ? String(filtros.embarcacao_id) : null;
 
     useEffect(() => {
@@ -68,6 +76,8 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
 
     const abrirEditar = (srv) => {
         setEditando(srv);
+        setFotosNovas([]);
+        envioFotos.limparRecusadas();
         editForm.setValues({
             descricao: srv.descricao || [],
             observacao: srv.observacao || '',
@@ -86,7 +96,11 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
             },
             {
                 preserveScroll: true,
-                onSuccess: () => setEditando(null),
+                // Sem `return`: o Inertia aguarda a promise do onSuccess antes de
+                // processar a próxima resposta, e o envio das fotos travaria.
+                onSuccess: () => {
+                    enviarFotosEFechar();
+                },
                 onError: (errors) => {
                     editForm.setErrors(errors);
                     notifications.show({
@@ -98,6 +112,20 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
                 onFinish: () => setSalvando(false),
             },
         );
+    };
+
+    /** As fotos vão junto com o salvar; o modal só fecha se todas forem aceitas. */
+    const enviarFotosEFechar = async () => {
+        if (fotosNovas.length > 0) {
+            const naoEnviadas = await envioFotos.enviar(editando.id, fotosNovas);
+            setFotosNovas(naoEnviadas);
+
+            if (naoEnviadas.length > 0) {
+                return;
+            }
+        }
+
+        setEditando(null);
     };
 
     const concluir = (srv) => {
@@ -207,6 +235,11 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
                                                     Obs: {srv.observacao}
                                                 </Text>
                                             )}
+                                            {srv.fotos.length > 0 && (
+                                                <div style={{ marginTop: 6 }}>
+                                                    <GaleriaFotos fotos={srv.fotos} tamanho={40} />
+                                                </div>
+                                            )}
                                         </Table.Td>
                                         <Table.Td>
                                             <Badge variant="light" color={statusConf.color} size="sm">
@@ -265,7 +298,7 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
 
             <Modal
                 opened={!!editando}
-                onClose={() => setEditando(null)}
+                onClose={() => !envioFotos.enviando && setEditando(null)}
                 title="Editar Registro de Serviço"
                 centered
             >
@@ -285,6 +318,21 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
 
                         <Textarea label="Observações" minRows={3} {...editForm.getInputProps('observacao')} />
 
+                        <Stack gap="xs">
+                            <Text size="sm" fw={500}>
+                                Fotos ({fotosEditando.length}/{LIMITE_FOTOS_POR_SERVICO})
+                            </Text>
+                            <GaleriaFotos fotos={fotosEditando} removivel />
+                            <CampoFotos
+                                value={fotosNovas}
+                                onChange={setFotosNovas}
+                                restantes={LIMITE_FOTOS_POR_SERVICO - fotosEditando.length}
+                                progresso={envioFotos.progresso}
+                                recusadas={envioFotos.recusadas}
+                                onFecharRecusadas={envioFotos.limparRecusadas}
+                            />
+                        </Stack>
+
                         {isAdmin && editando && editando.status !== 'concluido' && (
                             <Select
                                 label="Alterar Status"
@@ -295,10 +343,14 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
                         )}
 
                         <Group justify="flex-end" mt="md">
-                            <Button variant="default" onClick={() => setEditando(null)}>
+                            <Button variant="default" onClick={() => setEditando(null)} disabled={envioFotos.enviando}>
                                 Cancelar
                             </Button>
-                            <Button type="submit" loading={salvando}>
+                            <Button
+                                type="submit"
+                                loading={salvando || envioFotos.enviando}
+                                disabled={fotosNovasExcedem}
+                            >
                                 Salvar Alterações
                             </Button>
                         </Group>
