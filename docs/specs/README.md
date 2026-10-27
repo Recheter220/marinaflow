@@ -109,6 +109,7 @@ Todas fechadas, exceto onde indicado. Nenhuma spec está bloqueada esperando dec
 | D-08 | `ArquivoService` encapsulando o Storage vale a camada? | **Mantido.** `Storage::disk('fotos')->temporaryUrl()` resolveria direto dentro do serviço de domínio, mas o wrapper tem valor didático para o time e sustenta o acordo de que controller nenhum fala com `Storage`. | MF-03, MF-04 |
 | D-09 | Qual provedor compatível com S3? | **Cloudflare R2.** Egresso zero, e foto de serviço é vista e revista; 10 GB no gratuito (≈ 3.300 fotos de 3 MB, mais com redimensionamento); edge com presença em São Paulo, o que importa porque o navegador baixa a imagem direto do bucket, não pela função. `AWS_DEFAULT_REGION` tem de ser `auto` — é a única região que o R2 aceita. | MF-03, MF-04 |
 | D-10 | Controle de peças | **Cancelado por especificação do usuário da marina.** O sistema controla serviços e fotos. Sai o catálogo de peças e sai o vínculo peça-serviço; os campos de custo derivados foram removidos de MF-06, MF-07 e MF-08. Ver [MF-05](MF-05.md). | MF-05 e dependentes |
+| D-11 | Como enviar foto de até 10 MB se a função da Vercel recusa corpo acima de 4,5 MB? | **Redimensionar no navegador e enviar em lotes.** Decisão consciente do desenvolvimento, tomada na MF-04. A tela reduz cada foto para no máximo 1920 px no lado maior, em JPEG (qualidade 0,85), e agrupa os envios em lotes de até 3,5 MB e 10 fotos. Foto de celular cai de ~5 MB para ~400 KB, o que também poupa a cota do R2 (D-09). O servidor mantém a validação de 10 MB como defesa, mas na prática nunca recebe arquivo desse tamanho pela tela. Alternativa descartada: upload direto ao R2 por URL pré-assinada, que aceitaria o original mas muda rotas e contrato, exige CORS no bucket e leva a validação para depois do upload. Reabrir se a equipe precisar da foto em resolução original. | MF-04, MF-06 |
 
 ## Restrições da plataforma que toda spec herda
 
@@ -121,6 +122,8 @@ saber disto antes de escrever a primeira linha:
 - **O filesystem é somente-leitura fora de `/tmp`**, e `/tmp` morre com a invocação.
   Nada de gravar arquivo fora do disco S3. É por isso que a MF-03 é pré-requisito
   absoluto da MF-04.
+- **O corpo da requisição tem teto de 4,5 MB.** A Vercel recusa com 413 antes de chegar
+  ao Laravel. Todo upload passa por aqui — ver D-11.
 - **Extensões disponíveis** (confirmadas em produção): `gd` com JPEG/PNG/WebP, `exif`,
   `zip`, `intl`, `pdo_pgsql`, `fileinfo`. **Não há `imagick`.**
 - **Migração não roda no deploy.** A Vercel não tem gancho de release; migration é
