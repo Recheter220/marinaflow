@@ -136,8 +136,8 @@ Demais usuários são criados por convite (link enviado por e-mail).
 
 Em `APP_ENV=local` o seeder também monta uma base de demonstração
 (`DemonstracaoSeeder`): quatro funcionários (um inativo), seis embarcações e
-quinze serviços, em execução e concluídos. Os funcionários entram com senha
-`senha123`:
+quinze serviços, nos três status (inclusive `em_execucao`, como registro
+legado). Os funcionários entram com senha `senha123`:
 
 - `carlos@marinaflow.local`
 - `juliana@marinaflow.local`

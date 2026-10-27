@@ -10,10 +10,10 @@ use Illuminate\Database\Seeder;
 
 /**
  * Base de demonstração para desenvolvimento: funcionários com login,
- * embarcações vinculadas e serviços em execução e concluídos.
+ * embarcações vinculadas e serviços em todos os status.
  *
- * Só roda em `local` (ver `DatabaseSeeder`) e não roda de novo se já houver
- * funcionário cadastrado. Para recriar do zero: `migrate:fresh --seed`.
+ * Só roda em `local` e não roda de novo se já houver funcionário cadastrado.
+ * Para recriar do zero: `migrate:fresh --seed`.
  */
 class DemonstracaoSeeder extends Seeder
 {
@@ -53,6 +53,13 @@ class DemonstracaoSeeder extends Seeder
 
     public function run(): void
     {
+        // O `DatabaseSeeder` já filtra, mas `db:seed --class` chama este direto.
+        if (! app()->environment('local')) {
+            $this->command?->warn('Fora do ambiente local — demonstração ignorada.');
+
+            return;
+        }
+
         if (Funcionario::query()->exists()) {
             $this->command?->warn('Já há funcionários cadastrados — demonstração ignorada.');
 
@@ -89,23 +96,30 @@ class DemonstracaoSeeder extends Seeder
     }
 
     /**
-     * Dois concluídos pelo admin e um ainda em execução, do mais antigo ao mais
-     * recente, para o histórico ter os dois status e os dois perfis de autoria.
+     * Do mais antigo ao mais recente: um concluído pelo admin, um `em_execucao`
+     * de antes da MEL03 (registro legado) e um aguardando vistoria, para o
+     * histórico ter os três status e os dois perfis de autoria.
      */
     private function servicosDe(Embarcacao $embarcacao, Funcionario $funcionario, User $user, User $admin): void
     {
-        foreach ([120, 45, 3] as $indice => $diasAtras) {
-            $emExecucao = $indice === 2;
+        $porDiasAtras = [
+            120 => Servico::STATUS_CONCLUIDO,
+            45 => Servico::STATUS_EM_EXECUCAO,
+            3 => Servico::STATUS_AGUARDANDO_VISTORIA,
+        ];
+
+        foreach ($porDiasAtras as $diasAtras => $status) {
+            $concluido = $status === Servico::STATUS_CONCLUIDO;
 
             Servico::factory()->create([
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
                 'descricao' => fake()->randomElements(self::CATALOGO, fake()->numberBetween(1, 3)),
                 'data_execucao' => now()->subDays($diasAtras)->toDateString(),
-                'status' => $emExecucao ? Servico::STATUS_EM_EXECUCAO : Servico::STATUS_CONCLUIDO,
-                'observacao' => $emExecucao ? 'Aguardando peça para finalizar.' : null,
+                'status' => $status,
+                'observacao' => $status === Servico::STATUS_EM_EXECUCAO ? 'Aguardando peça para finalizar.' : null,
                 'created_by_user_id' => $user->id,
-                'updated_by_user_id' => $emExecucao ? $user->id : $admin->id,
+                'updated_by_user_id' => $concluido ? $admin->id : $user->id,
             ]);
         }
     }

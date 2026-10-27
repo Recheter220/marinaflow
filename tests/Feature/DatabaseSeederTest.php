@@ -24,8 +24,10 @@ class DatabaseSeederTest extends TestCase
 
         $this->assertSame(4, Funcionario::query()->count());
         $this->assertSame(15, Servico::query()->count());
-        $this->assertTrue(Servico::query()->where('status', Servico::STATUS_EM_EXECUCAO)->exists());
-        $this->assertTrue(Servico::query()->where('status', Servico::STATUS_CONCLUIDO)->exists());
+        $this->assertEqualsCanonicalizing(
+            Servico::STATUS_EDITAVEIS,
+            Servico::query()->distinct()->pluck('status')->all(),
+        );
 
         // Mesma regra do `ServicoService::criar`: o serviço é na embarcação do próprio funcionário.
         Servico::query()->with('embarcacao')->get()->each(
@@ -54,5 +56,14 @@ class DatabaseSeederTest extends TestCase
 
         $this->assertSame(1, User::query()->count());
         $this->assertSame(0, Funcionario::query()->count());
+    }
+
+    public function test_demonstracao_chamada_direto_fora_do_local_nao_cria_nada(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->seed(DemonstracaoSeeder::class);
+
+        $this->assertSame(0, Funcionario::query()->count());
+        $this->assertSame(0, Servico::query()->count());
     }
 }
