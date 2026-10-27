@@ -10,7 +10,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Base de demonstração para desenvolvimento: funcionários com login,
- * embarcações vinculadas e serviços em todos os status.
+ * embarcações vinculadas e serviços em todos os status, com foto.
  *
  * Só roda em `local` e não roda de novo se já houver funcionário cadastrado.
  * Para recriar do zero: `migrate:fresh --seed`.
@@ -93,6 +93,8 @@ class DemonstracaoSeeder extends Seeder
 
         // Sem responsável: só o admin enxerga.
         Embarcacao::factory()->create(['nome' => 'Sereia', 'identificacao' => 'BR-4410-SPF', 'tipo' => 'veleiro']);
+
+        $this->call(ServicoFotoSeeder::class);
     }
 
     /**
