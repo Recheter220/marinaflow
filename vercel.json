@@ -51,6 +51,7 @@
         "SESSION_DOMAIN": "null",
         "BROADCAST_CONNECTION": "log",
         "FILESYSTEM_DISK": "local",
+        "FOTOS_DISK": "fotos",
         "QUEUE_CONNECTION": "sync",
         "CACHE_STORE": "database",
         "MAIL_MAILER": "smtp",

@@ -30,5 +30,11 @@ class DatabaseSeeder extends Seeder
                 'ativo' => true,
             ],
         );
+
+        // Nunca em produção: um `db:seed` apontado para o Neon por engano não
+        // pode encher a base real de dado fictício.
+        if (app()->environment('local')) {
+            $this->call(DemonstracaoSeeder::class);
+        }
     }
 }

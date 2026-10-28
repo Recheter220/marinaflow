@@ -7,6 +7,8 @@ use App\Http\Requests\UpdateServicoRequest;
 use App\Models\Embarcacao;
 use App\Models\Funcionario;
 use App\Models\Servico;
+use App\Models\ServicoFoto;
+use App\Services\ArquivoService;
 use App\Services\ServicoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +18,10 @@ use Inertia\Response;
 /** `commands/servico_commands.rs`. */
 class ServicoController extends Controller
 {
-    public function __construct(private readonly ServicoService $servicos) {}
+    public function __construct(
+        private readonly ServicoService $servicos,
+        private readonly ArquivoService $arquivos,
+    ) {}
 
     /** Formulário de registro (`RegistrarServico.jsx`). */
     public function create(Request $request): Response
@@ -44,7 +49,7 @@ class ServicoController extends Controller
         $servicos = Servico::query()
             ->forUser($request->user())
             ->when($embarcacaoId, fn ($q) => $q->where('embarcacao_id', $embarcacaoId))
-            ->with(['embarcacao:id,nome,identificacao', 'funcionario:id,nome'])
+            ->with(['embarcacao:id,nome,identificacao', 'funcionario:id,nome', 'fotos'])
             ->latest('data_execucao')
             ->latest('id')
             ->get()
@@ -60,6 +65,11 @@ class ServicoController extends Controller
                 'observacao' => $s->observacao,
                 'created_at' => $s->created_at?->toIso8601String(),
                 'updated_at' => $s->updated_at?->toIso8601String(),
+                'fotos' => $s->fotos->map(fn (ServicoFoto $f): array => [
+                    'id' => $f->id,
+                    'url' => $this->arquivos->urlTemporaria($f->path),
+                    'nome_original' => $f->nome_original,
+                ]),
             ]);
 
         return Inertia::render('Historico', [
@@ -74,7 +84,10 @@ class ServicoController extends Controller
 
     public function store(StoreServicoRequest $request): RedirectResponse
     {
-        $this->servicos->criar($request->validated(), $request->user());
+        $servico = $this->servicos->criar($request->validated(), $request->user());
+
+        // A tela de registro envia as fotos depois, uma por requisição, para este id.
+        Inertia::flash('servico_id', $servico->id);
 
         return back()->with('success', "Serviço registrado e está 'Aguardando Vistoria'.");
     }

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'embarcacao_id',
@@ -56,6 +57,11 @@ class Servico extends Model
     public function funcionario(): BelongsTo
     {
         return $this->belongsTo(Funcionario::class);
+    }
+
+    public function fotos(): HasMany
+    {
+        return $this->hasMany(ServicoFoto::class)->orderBy('ordem')->orderBy('id');
     }
 
     public function createdBy(): BelongsTo

@@ -8,6 +8,8 @@ import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
 import { IconTool, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
+import CampoFotos from '@/components/CampoFotos';
+import { LIMITE_FOTOS_POR_SERVICO, useEnvioFotos } from '@/utils/fotos';
 import { SERVICO_OPTION_COLUMNS } from '@/utils/servicos';
 import 'dayjs/locale/pt-br';
 
@@ -17,6 +19,8 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
     const funcionarioId = auth.user.funcionario_id;
 
     const [sucesso, setSucesso] = useState(false);
+    const [fotos, setFotos] = useState([]);
+    const envioFotos = useEnvioFotos();
 
     const { data, setData, post, processing, errors, reset } = useInertiaForm({
         embarcacao_id: null,
@@ -40,7 +44,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                 observacao: d.observacao || null,
             }),
             preserveScroll: true,
-            onSuccess: () => {
+            onSuccess: (page) => {
                 reset('embarcacao_id', 'descricao', 'observacao');
                 if (!isAdmin && funcionarioId) {
                     setData('funcionario_id', String(funcionarioId));
@@ -52,9 +56,47 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                     color: 'green',
                     icon: <IconCheck size={16} />,
                 });
+
+                // Sem `await`/`return`: o Inertia aguarda a promise do onSuccess
+                // antes de processar a próxima resposta, e o envio travaria.
+                const servicoId = page.flash?.servico_id;
+                if (servicoId && fotos.length > 0) {
+                    enviarFotos(servicoId);
+                }
             },
         });
     };
+
+    /**
+     * O serviço já existe: o que for recusado não volta para o formulário,
+     * senão um novo envio criaria outro serviço.
+     */
+    const enviarFotos = async (servicoId) => {
+        const selecionadas = fotos;
+        setFotos([]);
+        const naoEnviadas = await envioFotos.enviar(servicoId, selecionadas);
+        const enviadas = selecionadas.length - naoEnviadas.length;
+
+        if (enviadas > 0) {
+            notifications.show({
+                title: 'Fotos anexadas',
+                message: `${enviadas} foto${enviadas !== 1 ? 's' : ''} anexada${enviadas !== 1 ? 's' : ''} ao serviço.`,
+                color: 'green',
+                icon: <IconCheck size={16} />,
+            });
+        }
+    };
+
+    const limpar = () => {
+        reset('embarcacao_id', 'descricao', 'observacao');
+        setFotos([]);
+        envioFotos.limparRecusadas();
+        if (!isAdmin && funcionarioId) {
+            setData('funcionario_id', String(funcionarioId));
+        }
+    };
+
+    const ocupado = processing || envioFotos.enviando;
 
     const embarcacaoOptions = embarcacoes.map((e) => ({
         value: String(e.id),
@@ -167,19 +209,25 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                                 error={errors.observacao}
                             />
 
+                            <CampoFotos
+                                value={fotos}
+                                onChange={setFotos}
+                                restantes={LIMITE_FOTOS_POR_SERVICO}
+                                progresso={envioFotos.progresso}
+                                recusadas={envioFotos.recusadas}
+                                onFecharRecusadas={envioFotos.limparRecusadas}
+                            />
+                            {envioFotos.recusadas.length > 0 && (
+                                <Text size="sm" c="dimmed">
+                                    O serviço foi registrado. Anexe as fotos recusadas pelo Histórico.
+                                </Text>
+                            )}
+
                             <Group justify="flex-end" mt="md">
-                                <Button
-                                    variant="default"
-                                    onClick={() => {
-                                        reset('embarcacao_id', 'descricao', 'observacao');
-                                        if (!isAdmin && funcionarioId) {
-                                            setData('funcionario_id', String(funcionarioId));
-                                        }
-                                    }}
-                                >
+                                <Button variant="default" onClick={limpar} disabled={ocupado}>
                                     Limpar
                                 </Button>
-                                <Button type="submit" loading={processing}>
+                                <Button type="submit" loading={ocupado} disabled={fotos.length > 10}>
                                     Serviço Registrado
                                 </Button>
                             </Group>
