@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\EmbarcacaoController;
 use App\Http\Controllers\FuncionarioController;
+use App\Http\Controllers\IntegracaoCepController;
 use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,9 @@ Route::middleware(['auth', 'ativo'])->group(function () {
 
     Route::get('/embarcacoes', [EmbarcacaoController::class, 'index'])->name('embarcacoes.index');
     Route::get('/funcionarios', [FuncionarioController::class, 'index'])->name('funcionarios.index');
+    Route::get('/integracoes/cep/{cep}', [IntegracaoCepController::class, 'show'])
+        ->middleware('throttle:30,1')
+        ->name('integracoes.cep');
 
     Route::get('/servicos/novo', [ServicoController::class, 'create'])->name('servicos.create');
     Route::post('/servicos', [ServicoController::class, 'store'])->name('servicos.store');
