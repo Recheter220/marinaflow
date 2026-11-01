@@ -102,7 +102,7 @@ Todas fechadas, exceto onde indicado. Nenhuma spec está bloqueada esperando dec
 | D-01 | Quais dependências novas entram? | **Aprovadas:** `league/flysystem-aws-s3-v3` (MF-03), `vitest` + `@testing-library/react` + `@testing-library/jest-dom` + `@testing-library/user-event` + `jsdom` (MF-01), `barryvdh/laravel-dompdf` (MF-07), `bacon/bacon-qr-code` (MF-09). Nenhuma tem substituto dentro do que já está instalado. Qualquer outra exige aprovação nova. | MF-01, MF-03, MF-07, MF-09 |
 | D-02 | Arrastar-e-soltar para fotos: `@mantine/dropzone` ou `FileInput`? | **`FileInput`**, que já vem no `@mantine/core`. Dependência nova por um ganho de ergonomia que ninguém mediu não se paga. Reabrir se a equipe do píer reclamar do fluxo no celular. | MF-04 |
 | D-03 | Motor de PDF: DomPDF ou Browsershot? | **DomPDF.** Deixou de ser preferência e virou restrição: o runtime da Vercel não tem Chromium, então Browsershot e `spatie/laravel-pdf` são impossíveis na plataforma escolhida. O `gd` está presente, confirmado em produção, então imagem dentro do PDF funciona. | MF-07, MF-09 |
-| D-04 | Catálogo de serviços: lista fixa em `utils/servicos.js` ou tabela? | **Vira tabela.** Com a MF-05 cancelada, é a única fonte de agregação que resta. Contar tipo de serviço sobre o texto livre de `descricao` quebra a série histórica no dia em que alguém renomear um item. Custo: migration da tabela de tipos, pivot, e backfill dos 8 itens que hoje estão no arquivo. **Única decisão aqui que aumenta escopo — precisa de confirmação do PO.** Se o PO adiar, as RFs de contagem por tipo passam a ser aproximações e têm de ser rotuladas como tal na tela e no PDF. | MF-07, MF-08 |
+| D-04 | Catálogo de serviços: lista fixa em `utils/servicos.js` ou tabela? | **Vira tabela — implementado na MF-07.** Contar tipo de serviço sobre o texto livre de `descricao` quebrava a série histórica no dia em que alguém renomeasse um item. Os itens agora vivem em `tipos_servico`, ligados por `servico_tipo_servico`; o backfill levou os 8 itens do arquivo e transformou texto fora do catálogo em tipo inativo. Tipo é desativado, nunca apagado: sai do formulário e continua no histórico. A contagem por tipo no relatório e no painel é exata. | MF-07, MF-08 |
 | D-05 | ViaCEP vale para o funcionário ou também para o cliente responsável? | **Só funcionário.** `cliente_responsavel` é campo de texto solto hoje; quando virar entidade própria, o endereço vai junto nessa hora. | MF-10 |
 | D-06 | Plataforma de hospedagem | **Vercel + Neon**, ambos em São Paulo. O monólito inteiro roda como função PHP via runtime `vercel-php` — não há frontend separado para hospedar, que era a premissa errada do `TODO.md`. Em produção desde 30/09/2026. | MF-13 |
 | D-07 | Migrar o e-mail do Gmail para um relay transacional (Brevo)? | **Pendente de condição externa:** exige domínio próprio. Hoje é Gmail + App Password, escolhido por alinhamento SPF/DKIM — sem domínio, enviar como `@gmail.com` por relay de terceiro é descartado ou marcado como spam em silêncio, e o convite de senha é o único e-mail que, se não chegar, impede o primeiro acesso. Limites que motivam a troca: 500 envios/dia, conta pessoal como remetente, nenhum log de entrega, nenhum webhook de bounce. | MF-13 |
@@ -134,9 +134,6 @@ saber disto antes de escrever a primeira linha:
 
 ### Alto
 
-- **Agregação por tipo de serviço sobre texto livre.** Relatório e painel contam itens
-  de um array de strings; renomear um item quebra a série histórica. Mitigado por D-04,
-  que precisa do aval do PO antes da Onda 2.
 - **Vazamento de arquivo.** Bucket privado com URL assinada é obrigatório: foto de
   embarcação de cliente não pode ficar pública por descuido de configuração.
 - **Divergência de dialeto entre teste e produção.** A suíte roda em SQLite e produção
@@ -146,9 +143,9 @@ saber disto antes de escrever a primeira linha:
 
 ### Médio
 
-- **Tempo de geração do PDF.** Síncrono até 500 serviços; acima disso, fila e
-  notificação — medir na MF-07 antes de assumir. Com `sync` em produção, o teto real
-  são os 30 s da função.
+- **Tempo de geração do PDF.** Medido na MF-07: 500 serviços em ~6 s no ambiente local,
+  quase tudo no render do DomPDF. Falta a medida em produção, onde a CPU é mais lenta;
+  com `sync`, o teto real são os 30 s da função.
 - **Cota da OpenWeather.** Cache de 30 minutos mantém o uso previsível; sem cache,
   cada abertura de painel vira uma chamada.
 - **Cinco migrations novas** (fotos, `concluido_em`, ULID, tipos de serviço e pivot).
