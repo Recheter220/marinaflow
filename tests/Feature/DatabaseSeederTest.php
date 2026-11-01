@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Funcionario;
 use App\Models\Servico;
+use App\Models\TipoServico;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemonstracaoSeeder;
@@ -35,6 +36,13 @@ class DatabaseSeederTest extends TestCase
         Servico::query()->with('embarcacao')->get()->each(
             fn (Servico $s) => $this->assertSame($s->funcionario_id, $s->embarcacao->funcionario_id),
         );
+
+        // D-04 — de 1 a 3 itens por serviço, todos do catálogo ativo.
+        Servico::query()->with('tipos')->get()->each(function (Servico $s): void {
+            $this->assertGreaterThanOrEqual(1, $s->tipos->count());
+            $this->assertLessThanOrEqual(3, $s->tipos->count());
+            $this->assertTrue($s->tipos->every(fn (TipoServico $t): bool => $t->ativo));
+        });
 
         Servico::query()->with('fotos')->get()->each(function (Servico $s): void {
             $this->assertCount(1, $s->fotos);
