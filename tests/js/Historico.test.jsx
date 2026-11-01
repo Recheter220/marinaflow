@@ -9,12 +9,17 @@ const embarcacoes = [
     { id: 4, nome: 'Vento Sul', identificacao: 'BR-5678' },
 ];
 
+const tiposServico = [
+    { id: 1, nome: 'Limpeza' },
+    { id: 2, nome: 'Motor' },
+];
+
 const servico = (dados) => ({
     id: 1,
     embarcacao_nome: 'Maré Alta',
     funcionario_id: 7,
     funcionario_nome: 'Fábio',
-    descricao: ['Limpeza'],
+    tipos: [{ id: 1, nome: 'Limpeza' }],
     observacao: null,
     status: 'em_execucao',
     fotos: [],
@@ -24,7 +29,7 @@ const servico = (dados) => ({
 });
 
 const renderHistorico = ({ servicos = [servico()], filtros = {}, auth = admin } = {}) =>
-    renderPagina(<Historico servicos={servicos} embarcacoes={embarcacoes} filtros={filtros} />, { auth });
+    renderPagina(<Historico servicos={servicos} embarcacoes={embarcacoes} tipos_servico={tiposServico} filtros={filtros} />, { auth });
 
 const filtro = () => screen.getByRole('textbox', { name: 'Filtrar por Embarcação' });
 
