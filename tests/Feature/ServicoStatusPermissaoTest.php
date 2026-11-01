@@ -15,9 +15,19 @@ class ServicoStatusPermissaoTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** Aborta antes de migrate:fresh se esta classe não estiver isolada em memória. */
+    /**
+     * Aborta antes de migrate:fresh se esta classe não estiver isolada em memória.
+     * A exceção é o PostgreSQL descartável do CI (RF-01.7 da MF-01), que existe só
+     * para o job e morre com ele.
+     */
     protected function beforeRefreshingDatabase(): void
     {
+        if ($this->app->environment('testing')
+            && getenv('GITHUB_ACTIONS') === 'true'
+            && config('database.default') === 'pgsql') {
+            return;
+        }
+
         if (! $this->app->environment('testing')
             || config('database.default') !== 'sqlite'
             || config('database.connections.sqlite.driver') !== 'sqlite'
