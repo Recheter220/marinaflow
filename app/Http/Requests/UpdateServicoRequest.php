@@ -15,8 +15,9 @@ class UpdateServicoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'descricao' => ['sometimes', 'required', 'array', 'min:1'],
-            'descricao.*' => ['required', 'string'],
+            // Tipo inativo já ligado ao serviço pode ser mantido; ligar um novo é barrado em ServicoService.
+            'tipos' => ['sometimes', 'required', 'array', 'min:1'],
+            'tipos.*' => ['integer', 'distinct', Rule::exists('tipos_servico', 'id')],
             'data_execucao' => ['sometimes', 'required', 'date'],
             'status' => ['sometimes', 'required', Rule::in(Servico::STATUS_EDITAVEIS)],
             'observacao' => ['nullable', 'string'],
@@ -30,6 +31,8 @@ class UpdateServicoRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'tipos.required' => 'Selecione ao menos um serviço realizado.',
+            'tipos.*.exists' => 'Tipo de serviço inexistente.',
             'status.in' => 'Status inválido. Use: '.implode(', ', Servico::STATUS_EDITAVEIS).'.',
         ];
     }

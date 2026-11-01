@@ -58,7 +58,7 @@ class ServicoStatusPermissaoTest extends TestCase
 
         $this->actingAs($user)->putJson(route('servicos.update', $servico), [
             'status' => $destino,
-            'descricao' => ['Buzina'],
+            'tipos' => $this->idsDosTipos('Buzina'),
             'observacao' => 'Tentativa de alteração',
         ])->assertForbidden();
 
@@ -80,7 +80,7 @@ class ServicoStatusPermissaoTest extends TestCase
     {
         [$user, $servico] = $this->servicoDoFuncionario($status);
         $payload = [
-            'descricao' => ['Buzina'],
+            'tipos' => $this->idsDosTipos('Buzina'),
             'observacao' => 'Dados editados',
             'data_execucao' => '2026-10-01',
         ];
@@ -94,7 +94,7 @@ class ServicoStatusPermissaoTest extends TestCase
 
         $servico->refresh();
         $this->assertSame($status, $servico->status);
-        $this->assertSame(['Buzina'], $servico->descricao);
+        $this->assertEqualsCanonicalizing(['Buzina'], $servico->tipos->pluck('nome')->all());
         $this->assertSame('Dados editados', $servico->observacao);
         $this->assertSame('2026-10-01', $servico->data_execucao->toDateString());
         $this->assertSame($user->funcionario_id, $servico->funcionario_id);
@@ -108,7 +108,7 @@ class ServicoStatusPermissaoTest extends TestCase
 
         $this->actingAs($user)->putJson(route('servicos.update', $servico), [
             'status' => Servico::STATUS_CONCLUIDO,
-            'descricao' => ['Buzina'],
+            'tipos' => $this->idsDosTipos('Buzina'),
         ])->assertForbidden();
 
         $this->assertSame($antes, $servico->refresh()->getRawOriginal());
@@ -122,7 +122,7 @@ class ServicoStatusPermissaoTest extends TestCase
 
         $this->actingAs($user)->putJson(route('servicos.update', $servico), [
             'status' => $servico->status,
-            'descricao' => ['Buzina'],
+            'tipos' => $this->idsDosTipos('Buzina'),
         ])->assertForbidden();
 
         $this->assertSame($antes, $servico->refresh()->getRawOriginal());

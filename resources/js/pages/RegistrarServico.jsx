@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Head, useForm as useInertiaForm, usePage } from '@inertiajs/react';
 import {
-    Title, Button, Select, Checkbox, Textarea, Group, Stack, Paper, Text,
-    Alert, SimpleGrid,
+    Title, Button, Select, Textarea, Group, Stack, Paper, Text,
+    Alert,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { notifications } from '@mantine/notifications';
@@ -10,10 +10,10 @@ import { IconTool, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
 import CampoFotos from '@/components/CampoFotos';
 import { LIMITE_FOTOS_POR_SERVICO, useEnvioFotos } from '@/utils/fotos';
-import { SERVICO_OPTION_COLUMNS } from '@/utils/servicos';
+import CampoTiposServico from '@/components/CampoTiposServico';
 import 'dayjs/locale/pt-br';
 
-export default function RegistrarServico({ embarcacoes, funcionarios }) {
+export default function RegistrarServico({ embarcacoes, funcionarios, tipos_servico }) {
     const { auth } = usePage().props;
     const isAdmin = auth.user.is_admin;
     const funcionarioId = auth.user.funcionario_id;
@@ -25,7 +25,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
     const { data, setData, post, processing, errors, reset } = useInertiaForm({
         embarcacao_id: null,
         funcionario_id: isAdmin ? null : (funcionarioId ? String(funcionarioId) : null),
-        descricao: [],
+        tipos: [],
         data_execucao: new Date(),
         observacao: '',
     });
@@ -38,6 +38,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                 ...d,
                 embarcacao_id: d.embarcacao_id ? Number(d.embarcacao_id) : null,
                 funcionario_id: d.funcionario_id ? Number(d.funcionario_id) : null,
+                tipos: d.tipos.map(Number),
                 data_execucao: d.data_execucao
                     ? new Date(d.data_execucao).toISOString().split('T')[0]
                     : null,
@@ -45,7 +46,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
             }),
             preserveScroll: true,
             onSuccess: (page) => {
-                reset('embarcacao_id', 'descricao', 'observacao');
+                reset('embarcacao_id', 'tipos', 'observacao');
                 if (!isAdmin && funcionarioId) {
                     setData('funcionario_id', String(funcionarioId));
                 }
@@ -88,7 +89,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
     };
 
     const limpar = () => {
-        reset('embarcacao_id', 'descricao', 'observacao');
+        reset('embarcacao_id', 'tipos', 'observacao');
         setFotos([]);
         envioFotos.limparRecusadas();
         if (!isAdmin && funcionarioId) {
@@ -181,23 +182,12 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                                 error={errors.data_execucao}
                             />
 
-                            <Checkbox.Group
-                                label="Serviços Realizados"
-                                required
-                                value={data.descricao}
-                                onChange={(v) => setData('descricao', v)}
-                                error={errors.descricao}
-                            >
-                                <SimpleGrid cols={2} spacing="xl" mt="xs">
-                                    {SERVICO_OPTION_COLUMNS.map((column, index) => (
-                                        <Stack key={index} gap="xs">
-                                            {column.map((servico) => (
-                                                <Checkbox key={servico} value={servico} label={servico} />
-                                            ))}
-                                        </Stack>
-                                    ))}
-                                </SimpleGrid>
-                            </Checkbox.Group>
+                            <CampoTiposServico
+                                tipos={tipos_servico}
+                                value={data.tipos}
+                                onChange={(v) => setData('tipos', v)}
+                                error={errors.tipos}
+                            />
 
                             <Textarea
                                 label="Observações"

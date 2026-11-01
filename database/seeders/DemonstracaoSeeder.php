@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Embarcacao;
 use App\Models\Funcionario;
 use App\Models\Servico;
+use App\Models\TipoServico;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -19,18 +20,6 @@ class DemonstracaoSeeder extends Seeder
 {
     /** Senha de todos os funcionários de demonstração. */
     public const SENHA = 'senha123';
-
-    /** Mesmo catálogo de `resources/js/utils/servicos.js`. */
-    private const CATALOGO = [
-        'Buzina',
-        'Guincho da âncora',
-        'Lavagem',
-        'Limpeza',
-        'Luzes de navegação',
-        'Motor',
-        'Rádio de som',
-        'radio VHF',
-    ];
 
     /**
      * Funcionário => [cargo, e-mail de login, embarcações sob responsabilidade].
@@ -110,13 +99,14 @@ class DemonstracaoSeeder extends Seeder
             3 => Servico::STATUS_AGUARDANDO_VISTORIA,
         ];
 
+        $catalogo = TipoServico::query()->ativos()->pluck('nome')->all();
+
         foreach ($porDiasAtras as $diasAtras => $status) {
             $concluido = $status === Servico::STATUS_CONCLUIDO;
 
-            Servico::factory()->create([
+            Servico::factory()->comTipos(fake()->randomElements($catalogo, fake()->numberBetween(1, 3)))->create([
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'descricao' => fake()->randomElements(self::CATALOGO, fake()->numberBetween(1, 3)),
                 'data_execucao' => now()->subDays($diasAtras)->toDateString(),
                 'status' => $status,
                 'observacao' => $status === Servico::STATUS_EM_EXECUCAO ? 'Aguardando peça para finalizar.' : null,

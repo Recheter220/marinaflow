@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import {
     Title, Select, Table, Badge, Group, Stack, Paper, Text, ActionIcon,
-    Tooltip, Menu, Modal, Textarea, Button, Checkbox, SimpleGrid, Center,
+    Tooltip, Menu, Modal, Textarea, Button, Center,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -11,7 +11,7 @@ import AppLayout from '@/layouts/AppLayout';
 import CampoFotos from '@/components/CampoFotos';
 import GaleriaFotos from '@/components/GaleriaFotos';
 import { LIMITE_FOTOS_POR_SERVICO, useEnvioFotos } from '@/utils/fotos';
-import { SERVICO_OPTION_COLUMNS } from '@/utils/servicos';
+import CampoTiposServico from '@/components/CampoTiposServico';
 
 const STATUS_CONFIG = {
     em_execucao: { label: 'Em Execução', color: 'blue' },
@@ -39,7 +39,7 @@ const formatarDataHora = (iso) => {
     });
 };
 
-export default function Historico({ servicos, embarcacoes, filtros }) {
+export default function Historico({ servicos, embarcacoes, tipos_servico, filtros }) {
     const { auth, flash } = usePage().props;
     const isAdmin = auth.user.is_admin;
     const funcionarioId = auth.user.funcionario_id;
@@ -60,9 +60,9 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
     }, [flash]);
 
     const editForm = useForm({
-        initialValues: { descricao: [], observacao: '', status: '' },
+        initialValues: { tipos: [], observacao: '', status: '' },
         validate: {
-            descricao: (v) => (v.length === 0 ? 'Selecione ao menos um serviço' : null),
+            tipos: (v) => (v.length === 0 ? 'Selecione ao menos um serviço' : null),
         },
     });
 
@@ -79,7 +79,7 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
         setFotosNovas([]);
         envioFotos.limparRecusadas();
         editForm.setValues({
-            descricao: srv.descricao || [],
+            tipos: srv.tipos.map((t) => String(t.id)),
             observacao: srv.observacao || '',
             status: srv.status,
         });
@@ -90,7 +90,7 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
         router.put(
             route('servicos.update', editando.id),
             {
-                descricao: values.descricao,
+                tipos: values.tipos.map(Number),
                 observacao: values.observacao || null,
                 ...(values.status !== editando.status ? { status: values.status } : {}),
             },
@@ -228,7 +228,7 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
                                         <Table.Td>{srv.funcionario_nome || '—'}</Table.Td>
                                         <Table.Td>
                                             <Text size="sm" lineClamp={2}>
-                                                {srv.descricao?.join(', ')}
+                                                {srv.tipos.map((t) => t.nome).join(', ')}
                                             </Text>
                                             {srv.observacao && (
                                                 <Text size="xs" c="dimmed" lineClamp={1}>
@@ -304,17 +304,11 @@ export default function Historico({ servicos, embarcacoes, filtros }) {
             >
                 <form onSubmit={editForm.onSubmit(salvarEdicao)}>
                     <Stack gap="sm">
-                        <Checkbox.Group label="Serviços Realizados" required {...editForm.getInputProps('descricao')}>
-                            <SimpleGrid cols={2} spacing="xl" mt="xs">
-                                {SERVICO_OPTION_COLUMNS.map((column, index) => (
-                                    <Stack key={index} gap="xs">
-                                        {column.map((servico) => (
-                                            <Checkbox key={servico} value={servico} label={servico} />
-                                        ))}
-                                    </Stack>
-                                ))}
-                            </SimpleGrid>
-                        </Checkbox.Group>
+                        <CampoTiposServico
+                            tipos={tipos_servico}
+                            extras={editando?.tipos}
+                            {...editForm.getInputProps('tipos')}
+                        />
 
                         <Textarea label="Observações" minRows={3} {...editForm.getInputProps('observacao')} />
 

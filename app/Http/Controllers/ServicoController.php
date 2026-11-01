@@ -8,6 +8,7 @@ use App\Models\Embarcacao;
 use App\Models\Funcionario;
 use App\Models\Servico;
 use App\Models\ServicoFoto;
+use App\Models\TipoServico;
 use App\Services\ArquivoService;
 use App\Services\ServicoService;
 use Illuminate\Http\RedirectResponse;
@@ -35,6 +36,7 @@ class ServicoController extends Controller
                 ->ativos()
                 ->orderBy('nome')
                 ->get(['id', 'nome', 'cargo']),
+            'tipos_servico' => $this->tiposAtivos(),
         ]);
     }
 
@@ -49,7 +51,7 @@ class ServicoController extends Controller
         $servicos = Servico::query()
             ->forUser($request->user())
             ->when($embarcacaoId, fn ($q) => $q->where('embarcacao_id', $embarcacaoId))
-            ->with(['embarcacao:id,nome,identificacao', 'funcionario:id,nome', 'fotos'])
+            ->with(['embarcacao:id,nome,identificacao', 'funcionario:id,nome', 'tipos:id,nome', 'fotos'])
             ->latest('data_execucao')
             ->latest('id')
             ->get()
@@ -59,7 +61,7 @@ class ServicoController extends Controller
                 'embarcacao_nome' => $s->embarcacao?->nome,
                 'funcionario_id' => $s->funcionario_id,
                 'funcionario_nome' => $s->funcionario?->nome,
-                'descricao' => $s->descricao,
+                'tipos' => $s->tipos->map(fn (TipoServico $t): array => ['id' => $t->id, 'nome' => $t->nome]),
                 'data_execucao' => $s->data_execucao?->toDateString(),
                 'status' => $s->status,
                 'observacao' => $s->observacao,
@@ -78,6 +80,7 @@ class ServicoController extends Controller
                 ->forUser($request->user())
                 ->orderBy('nome')
                 ->get(['id', 'nome', 'identificacao']),
+            'tipos_servico' => $this->tiposAtivos(),
             'filtros' => ['embarcacao_id' => $embarcacaoId],
         ]);
     }
@@ -97,5 +100,16 @@ class ServicoController extends Controller
         $this->servicos->atualizar($servico, $request->validated(), $request->user());
 
         return back()->with('success', 'Serviço atualizado.');
+    }
+
+    /**
+     * Opções do formulário. A tela ordena com `localeCompare` em pt-BR, que trata
+     * caixa e acento melhor que o `ORDER BY` do SQLite.
+     *
+     * @return array<int, array{id: int, nome: string}>
+     */
+    private function tiposAtivos(): array
+    {
+        return TipoServico::query()->ativos()->get(['id', 'nome'])->toArray();
     }
 }

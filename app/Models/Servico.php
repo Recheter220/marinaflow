@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'embarcacao_id',
     'funcionario_id',
-    'descricao',
     'data_execucao',
     'status',
     'observacao',
@@ -45,7 +45,6 @@ class Servico extends Model
     {
         return [
             'data_execucao' => 'date',
-            'descricao' => 'array',
         ];
     }
 
@@ -57,6 +56,12 @@ class Servico extends Model
     public function funcionario(): BelongsTo
     {
         return $this->belongsTo(Funcionario::class);
+    }
+
+    /** Itens do serviço (D-04). */
+    public function tipos(): BelongsToMany
+    {
+        return $this->belongsToMany(TipoServico::class, 'servico_tipo_servico');
     }
 
     public function fotos(): HasMany
