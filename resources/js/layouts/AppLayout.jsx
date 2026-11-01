@@ -16,6 +16,7 @@ import {
     IconUsers,
     IconTool,
     IconHistory,
+    IconFileText,
     IconAnchor,
     IconLogout,
     IconShieldLock,
@@ -26,6 +27,7 @@ const navItems = [
     { label: 'Funcionários', icon: IconUsers, path: '/funcionarios', description: 'Equipe e cargos' },
     { label: 'Registrar Serviço', icon: IconTool, path: '/servicos/novo', description: 'Novo registro' },
     { label: 'Histórico', icon: IconHistory, path: '/historico', description: 'Consulta de serviços' },
+    { label: 'Relatórios', icon: IconFileText, path: '/relatorios', description: 'Serviços em PDF' },
 ];
 
 /**
