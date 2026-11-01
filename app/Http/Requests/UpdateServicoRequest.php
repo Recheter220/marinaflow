@@ -17,7 +17,7 @@ class UpdateServicoRequest extends FormRequest
         return [
             'descricao' => ['sometimes', 'required', 'array', 'min:1'],
             'descricao.*' => ['required', 'string'],
-            'data_execucao' => ['sometimes', 'required', 'date'],
+            'data_execucao' => ['sometimes', 'required', 'date_format:Y-m-d'],
             'status' => ['sometimes', 'required', Rule::in(Servico::STATUS_EDITAVEIS)],
             'observacao' => ['nullable', 'string'],
             'funcionario_id' => ['sometimes', 'nullable', 'integer', Rule::exists('funcionarios', 'id')],
@@ -30,6 +30,7 @@ class UpdateServicoRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'data_execucao.date_format' => 'Data de execução deve estar no formato AAAA-MM-DD, sem hora.',
             'status.in' => 'Status inválido. Use: '.implode(', ', Servico::STATUS_EDITAVEIS).'.',
         ];
     }

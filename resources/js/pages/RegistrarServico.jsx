@@ -5,6 +5,7 @@ import {
     Alert, SimpleGrid,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
+import dayjs from 'dayjs';
 import { notifications } from '@mantine/notifications';
 import { IconTool, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
@@ -22,7 +23,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
     const [fotos, setFotos] = useState([]);
     const envioFotos = useEnvioFotos();
 
-    const { data, setData, post, processing, errors, reset } = useInertiaForm({
+    const { data, setData, post, processing, errors, reset, transform } = useInertiaForm({
         embarcacao_id: null,
         funcionario_id: isAdmin ? null : (funcionarioId ? String(funcionarioId) : null),
         descricao: [],
@@ -33,16 +34,18 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
     const submit = (e) => {
         e.preventDefault();
 
+        // `transform` é método do useForm no Inertia v3; como opção do `post()` é ignorado.
+        transform((d) => ({
+            ...d,
+            embarcacao_id: d.embarcacao_id ? Number(d.embarcacao_id) : null,
+            funcionario_id: d.funcionario_id ? Number(d.funcionario_id) : null,
+            // Data no fuso do navegador. `toISOString()` passa para UTC, e depois das 21h
+            // em Brasília o dia já é o seguinte.
+            data_execucao: d.data_execucao ? dayjs(d.data_execucao).format('YYYY-MM-DD') : null,
+            observacao: d.observacao || null,
+        }));
+
         post(route('servicos.store'), {
-            transform: (d) => ({
-                ...d,
-                embarcacao_id: d.embarcacao_id ? Number(d.embarcacao_id) : null,
-                funcionario_id: d.funcionario_id ? Number(d.funcionario_id) : null,
-                data_execucao: d.data_execucao
-                    ? new Date(d.data_execucao).toISOString().split('T')[0]
-                    : null,
-                observacao: d.observacao || null,
-            }),
             preserveScroll: true,
             onSuccess: (page) => {
                 reset('embarcacao_id', 'descricao', 'observacao');
