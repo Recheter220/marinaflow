@@ -150,6 +150,33 @@ class ServicoControllerTest extends TestCase
             ->assertSessionHasErrors(['tipos', 'data_execucao']);
     }
 
+    /**
+     * O que a tela mandava quando o `transform` era ignorado: a hora atual em UTC.
+     * Depois das 21h em Brasília isso grava o dia seguinte.
+     */
+    public function test_data_de_execucao_com_hora_e_recusada_no_registro_e_na_edicao(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $servico = Servico::factory()->create(['data_execucao' => '2026-10-31']);
+        $mensagem = ['data_execucao' => 'Data de execução deve estar no formato AAAA-MM-DD, sem hora.'];
+
+        $this->actingAs($admin)
+            ->post(route('servicos.store'), [
+                'embarcacao_id' => Embarcacao::factory()->create()->id,
+                'funcionario_id' => Funcionario::factory()->create()->id,
+                'tipos' => $this->idsDosTipos('Limpeza'),
+                'data_execucao' => '2026-11-01T00:30:43.000Z',
+            ])
+            ->assertSessionHasErrors($mensagem);
+
+        $this->actingAs($admin)
+            ->put(route('servicos.update', $servico), ['data_execucao' => '2026-11-01T00:30:43.000Z'])
+            ->assertSessionHasErrors($mensagem);
+
+        $this->assertDatabaseCount('servicos', 1);
+        $this->assertSame('2026-10-31', $servico->refresh()->data_execucao->toDateString());
+    }
+
     /** O `funcionario_id` enviado é ignorado e substituído pelo do usuário logado. */
     public function test_funcionario_e_atribuido_a_si_mesmo_ignorando_o_payload(): void
     {

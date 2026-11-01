@@ -23,7 +23,7 @@ class StoreServicoRequest extends FormRequest
             'funcionario_id' => ['required', 'integer', Rule::exists('funcionarios', 'id')],
             'tipos' => ['required', 'array', 'min:1'],
             'tipos.*' => ['integer', 'distinct', Rule::exists('tipos_servico', 'id')->where('ativo', true)],
-            'data_execucao' => ['required', 'date'],
+            'data_execucao' => ['required', 'date_format:Y-m-d'],
             'observacao' => ['nullable', 'string'],
         ];
     }
@@ -39,6 +39,7 @@ class StoreServicoRequest extends FormRequest
             'tipos.required' => 'Selecione ao menos um serviço realizado.',
             'tipos.*.exists' => 'Tipo de serviço inexistente ou fora de uso.',
             'data_execucao.required' => 'Data de execução é obrigatória.',
+            'data_execucao.date_format' => 'Data de execução deve estar no formato AAAA-MM-DD, sem hora.',
         ];
     }
 }
