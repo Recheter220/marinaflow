@@ -46,6 +46,19 @@ class RelatorioServicoTest extends TestCase
             ->assertViewHas('linhas', fn (array $linhas): bool => count($linhas) === 5);
     }
 
+    public function test_primeiro_e_ultimo_dia_do_periodo_entram_no_relatorio(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Servico::factory()->create(['data_execucao' => '2026-07-31']);
+        Servico::factory()->create(['data_execucao' => '2026-08-01']);
+        Servico::factory()->create(['data_execucao' => '2026-08-31']);
+        Servico::factory()->create(['data_execucao' => '2026-09-01']);
+
+        $this->actingAs($admin)
+            ->get(route('relatorios.servicos', [...self::AGOSTO, 'formato' => 'html']))
+            ->assertViewHas('linhas', fn (array $linhas): bool => array_column($linhas, 'data') === ['01/08/2026', '31/08/2026']);
+    }
+
     public function test_periodo_fora_de_mes_fechado_leva_as_duas_datas_no_nome_do_arquivo(): void
     {
         $admin = User::factory()->admin()->create();

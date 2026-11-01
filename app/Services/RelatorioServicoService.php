@@ -50,7 +50,10 @@ class RelatorioServicoService
 
         $servicos = Servico::query()
             ->forUser($solicitante)
-            ->whereBetween('data_execucao', [$inicio->toDateString(), $fim->toDateString()])
+            // whereDate, não whereBetween: no SQLite a coluna é texto com hora ('2026-08-31 00:00:00'),
+            // e a comparação de string deixaria o último dia de fora.
+            ->whereDate('data_execucao', '>=', $inicio->toDateString())
+            ->whereDate('data_execucao', '<=', $fim->toDateString())
             ->when($embarcacaoId, fn ($q) => $q->where('embarcacao_id', $embarcacaoId))
             ->when($funcionarioId, fn ($q) => $q->where('funcionario_id', $funcionarioId))
             ->with(['embarcacao:id,nome,identificacao', 'funcionario:id,nome', 'tipos:id,nome'])
