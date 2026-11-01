@@ -10,10 +10,13 @@ const vitePort = Number(process.env.VITE_PORT ?? 5173);
 
 export default defineConfig({
     plugins: [
-        laravel({
-            input: ['resources/css/app.css', 'resources/js/app.jsx'],
-            refresh: true,
-        }),
+        // O Vitest sobe o Vite em modo `serve`, que o plugin do Laravel recusa
+        // quando há `CI` no ambiente (GitHub Actions). Os testes não usam o plugin.
+        !process.env.VITEST &&
+            laravel({
+                input: ['resources/css/app.css', 'resources/js/app.jsx'],
+                refresh: true,
+            }),
         react(),
     ],
     resolve: {
@@ -26,5 +29,11 @@ export default defineConfig({
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },
+    },
+    test: {
+        environment: 'jsdom',
+        globals: true,
+        setupFiles: ['./tests/js/setup.js'],
+        include: ['tests/js/**/*.test.{js,jsx}'],
     },
 });
