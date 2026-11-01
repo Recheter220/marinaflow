@@ -31,6 +31,13 @@ class Servico extends Model
 
     public const STATUS_CONCLUIDO = 'concluido';
 
+    /** Rótulos de `Historico.jsx`, para o que sai do servidor (relatório). */
+    public const STATUS_ROTULOS = [
+        self::STATUS_EM_EXECUCAO => 'Em Execução',
+        self::STATUS_AGUARDANDO_VISTORIA => 'Aguardando Vistoria',
+        self::STATUS_CONCLUIDO => 'Concluído',
+    ];
+
     /** Valores aceitos no payload; as transições são validadas em ServicoService. */
     public const STATUS_EDITAVEIS = [
         self::STATUS_EM_EXECUCAO,
