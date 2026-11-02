@@ -30,6 +30,7 @@ Route::middleware(['auth', 'ativo'])->group(function () {
     Route::redirect('/', '/embarcacoes')->name('dashboard');
 
     Route::get('/embarcacoes', [EmbarcacaoController::class, 'index'])->name('embarcacoes.index');
+    Route::get('/embarcacoes/{embarcacao}', [EmbarcacaoController::class, 'show'])->name('embarcacoes.show');
     Route::get('/funcionarios', [FuncionarioController::class, 'index'])->name('funcionarios.index');
 
     Route::get('/servicos/novo', [ServicoController::class, 'create'])->name('servicos.create');
