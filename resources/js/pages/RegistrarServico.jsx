@@ -11,7 +11,7 @@ import { IconTool, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
 import CampoFotos from '@/components/CampoFotos';
 import { LIMITE_FOTOS_POR_SERVICO, useEnvioFotos } from '@/utils/fotos';
-import CampoTiposServico from '@/components/CampoTiposServico';
+import VerificacaoItens, { novaVerificacao } from '@/components/VerificacaoItens';
 import 'dayjs/locale/pt-br';
 
 export default function RegistrarServico({ embarcacoes, funcionarios, tipos_servico }) {
@@ -26,7 +26,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios, tipos_serv
     const { data, setData, post, processing, errors, reset, transform } = useInertiaForm({
         embarcacao_id: null,
         funcionario_id: isAdmin ? null : (funcionarioId ? String(funcionarioId) : null),
-        tipos: [],
+        verificacao_itens: novaVerificacao(),
         data_execucao: new Date(),
         observacao: '',
     });
@@ -39,7 +39,6 @@ export default function RegistrarServico({ embarcacoes, funcionarios, tipos_serv
             ...d,
             embarcacao_id: d.embarcacao_id ? Number(d.embarcacao_id) : null,
             funcionario_id: d.funcionario_id ? Number(d.funcionario_id) : null,
-            tipos: d.tipos.map(Number),
             // Data no fuso do navegador. `toISOString()` passa para UTC, e depois das 21h
             // em Brasília o dia já é o seguinte.
             data_execucao: d.data_execucao ? dayjs(d.data_execucao).format('YYYY-MM-DD') : null,
@@ -49,7 +48,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios, tipos_serv
         post(route('servicos.store'), {
             preserveScroll: true,
             onSuccess: (page) => {
-                reset('embarcacao_id', 'tipos', 'observacao');
+                reset('embarcacao_id', 'verificacao_itens', 'observacao');
                 if (!isAdmin && funcionarioId) {
                     setData('funcionario_id', String(funcionarioId));
                 }
@@ -92,7 +91,7 @@ export default function RegistrarServico({ embarcacoes, funcionarios, tipos_serv
     };
 
     const limpar = () => {
-        reset('embarcacao_id', 'tipos', 'observacao');
+        reset('embarcacao_id', 'verificacao_itens', 'observacao');
         setFotos([]);
         envioFotos.limparRecusadas();
         if (!isAdmin && funcionarioId) {
@@ -185,11 +184,10 @@ export default function RegistrarServico({ embarcacoes, funcionarios, tipos_serv
                                 error={errors.data_execucao}
                             />
 
-                            <CampoTiposServico
-                                tipos={tipos_servico}
-                                value={data.tipos}
-                                onChange={(v) => setData('tipos', v)}
-                                error={errors.tipos}
+                            <VerificacaoItens
+                                value={data.verificacao_itens}
+                                onChange={(value) => setData('verificacao_itens', value)}
+                                errors={errors}
                             />
 
                             <Textarea

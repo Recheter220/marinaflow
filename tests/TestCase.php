@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Models\TipoServico;
+use App\Services\VerificacaoItens;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -29,5 +30,13 @@ abstract class TestCase extends BaseTestCase
             fn (string $nome): int => TipoServico::query()->where('nome', $nome)->value('id'),
             $nomes,
         );
+    }
+
+    protected function verificacaoValida(string $atividade = 'limpeza'): array
+    {
+        return [
+            'equipamentos' => array_fill_keys(array_keys(VerificacaoItens::EQUIPAMENTOS), 'funcionamento_ok'),
+            'atividade' => $atividade,
+        ];
     }
 }

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'embarcacao_id',
     'funcionario_id',
+    'verificacao_itens',
     'data_execucao',
     'status',
     'observacao',
@@ -52,6 +53,8 @@ class Servico extends Model
     {
         return [
             'data_execucao' => 'date',
+            'verificacao_itens' => 'array',
+            'tipos_legados' => 'array',
         ];
     }
 

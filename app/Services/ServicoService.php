@@ -19,7 +19,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class ServicoService
 {
     /**
-     * @param  array{embarcacao_id: int, funcionario_id: int, tipos: array<int, int>, data_execucao: string, observacao: ?string}  $data
+     * @param  array{embarcacao_id: int, funcionario_id: int, verificacao_itens: array<string, mixed>, data_execucao: string, observacao: ?string}  $data
      */
     public function criar(array $data, User $autor): Servico
     {
@@ -43,6 +43,11 @@ class ServicoService
             ]);
         }
 
+        VerificacaoItens::validate($data);
+        if (array_key_exists('tipos', $data)) {
+            throw ValidationException::withMessages(['tipos' => 'A atividade é definida pela verificação MEL02.']);
+        }
+
         return DB::transaction(function () use ($data, $autor): Servico {
             $servico = Servico::query()->create([
                 ...Arr::except($data, 'tipos'),
@@ -51,7 +56,7 @@ class ServicoService
                 'updated_by_user_id' => $autor->id,
             ]);
 
-            $servico->tipos()->sync($data['tipos']);
+            $servico->tipos()->sync([$this->tipoDaAtividade($data['verificacao_itens'])]);
 
             return $servico;
         });
@@ -85,15 +90,39 @@ class ServicoService
             ]);
         }
 
+        if (array_key_exists('verificacao_itens', $data)) {
+            VerificacaoItens::validate($data);
+        }
+
+        if (array_key_exists('tipos', $data)
+            && ($servico->verificacao_itens !== null || array_key_exists('verificacao_itens', $data))) {
+            throw ValidationException::withMessages(['tipos' => 'A atividade é definida pela verificação MEL02.']);
+        }
+
         if (array_key_exists('tipos', $data)) {
             $this->recusarTipoInativoNovo($servico, $data['tipos']);
         }
 
         return DB::transaction(function () use ($servico, $data, $autor): Servico {
+            if (array_key_exists('verificacao_itens', $data)
+                && $servico->verificacao_itens === null
+                && $servico->tipos_legados === null) {
+                $servico->tipos_legados = $servico->tipos()->orderBy('tipos_servico.id')
+                    ->get(['tipos_servico.id', 'nome'])
+                    ->map(fn (TipoServico $tipo): array => ['id' => $tipo->id, 'nome' => $tipo->nome])->all();
+            }
+
             $servico->update([...Arr::except($data, 'tipos'), 'updated_by_user_id' => $autor->id]);
 
             if (array_key_exists('tipos', $data)) {
                 $servico->tipos()->sync($data['tipos']);
+            }
+
+            if (array_key_exists('verificacao_itens', $data)) {
+                $tipoId = $this->tipoDaAtividade($data['verificacao_itens'], $servico);
+                $atividades = TipoServico::query()->whereIn('nome', array_values(VerificacaoItens::ATIVIDADES))->pluck('id')->all();
+                $servico->tipos()->detach($atividades);
+                $servico->tipos()->syncWithoutDetaching([$tipoId]);
             }
 
             return $servico;
@@ -173,6 +202,21 @@ class ServicoService
                 'tipos' => 'Tipo de serviço fora de uso não pode ser adicionado.',
             ]);
         }
+    }
+
+    /** @param array<string, mixed> $verificacao */
+    private function tipoDaAtividade(array $verificacao, ?Servico $servico = null): int
+    {
+        $nome = VerificacaoItens::ATIVIDADES[$verificacao['atividade']];
+        $tipo = TipoServico::query()->where('nome', $nome)->first();
+
+        if ($tipo === null || (! $tipo->ativo && ! ($servico?->tipos()->whereKey($tipo->id)->exists() ?? false))) {
+            throw ValidationException::withMessages([
+                'verificacao_itens.atividade' => 'A atividade selecionada não está disponível no catálogo.',
+            ]);
+        }
+
+        return $tipo->id;
     }
 
     private function funcionarioDoUsuario(User $user): int

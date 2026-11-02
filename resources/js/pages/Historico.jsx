@@ -12,6 +12,7 @@ import CampoFotos from '@/components/CampoFotos';
 import GaleriaFotos from '@/components/GaleriaFotos';
 import { LIMITE_FOTOS_POR_SERVICO, useEnvioFotos } from '@/utils/fotos';
 import CampoTiposServico from '@/components/CampoTiposServico';
+import VerificacaoItens, { novaVerificacao, ResumoVerificacao } from '@/components/VerificacaoItens';
 
 const STATUS_CONFIG = {
     em_execucao: { label: 'Em Execução', color: 'blue' },
@@ -60,9 +61,9 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
     }, [flash]);
 
     const editForm = useForm({
-        initialValues: { tipos: [], observacao: '', status: '' },
+        initialValues: { tipos: [], verificacao_itens: null, observacao: '', status: '' },
         validate: {
-            tipos: (v) => (v.length === 0 ? 'Selecione ao menos um serviço' : null),
+            tipos: (v, values) => (!values.verificacao_itens && v.length === 0 ? 'Selecione ao menos um serviço' : null),
         },
     });
 
@@ -80,6 +81,7 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
         envioFotos.limparRecusadas();
         editForm.setValues({
             tipos: srv.tipos.map((t) => String(t.id)),
+            verificacao_itens: srv.verificacao_itens || null,
             observacao: srv.observacao || '',
             status: srv.status,
         });
@@ -90,7 +92,9 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
         router.put(
             route('servicos.update', editando.id),
             {
-                tipos: values.tipos.map(Number),
+                ...(values.verificacao_itens
+                    ? { verificacao_itens: values.verificacao_itens }
+                    : { tipos: values.tipos.map(Number) }),
                 observacao: values.observacao || null,
                 ...(values.status !== editando.status ? { status: values.status } : {}),
             },
@@ -227,8 +231,27 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
                                         <Table.Td>{srv.embarcacao_nome || '—'}</Table.Td>
                                         <Table.Td>{srv.funcionario_nome || '—'}</Table.Td>
                                         <Table.Td>
-                                            <Text size="sm" lineClamp={2}>
-                                                {srv.tipos.map((t) => t.nome).join(', ')}
+                                            <Text component="div" size="sm">
+                                                {srv.verificacao_itens ? (
+                                                    <>
+                                                        <ResumoVerificacao value={srv.verificacao_itens} />
+                                                        {srv.tipos_legados?.length > 0 && (
+                                                            <Text size="sm" mt="xs">
+                                                                Itens do registro original: {srv.tipos_legados.map((t) => t.nome).join(', ')}
+                                                            </Text>
+                                                        )}
+                                                        {srv.tipos?.length > 0 && (
+                                                            <Text size="xs" c="dimmed">
+                                                                Tipos vinculados: {srv.tipos.map((t) => t.nome).join(', ')}
+                                                            </Text>
+                                                        )}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {srv.tipos.map((t) => t.nome).join(', ')}
+                                                        <Text size="xs" c="dimmed">Registro antigo — sem classificação MEL02</Text>
+                                                    </>
+                                                )}
                                             </Text>
                                             {srv.observacao && (
                                                 <Text size="xs" c="dimmed" lineClamp={1}>
@@ -304,11 +327,25 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
             >
                 <form onSubmit={editForm.onSubmit(salvarEdicao)}>
                     <Stack gap="sm">
-                        <CampoTiposServico
-                            tipos={tipos_servico}
-                            extras={editando?.tipos}
-                            {...editForm.getInputProps('tipos')}
-                        />
+                        {editForm.values.verificacao_itens ? (
+                            <VerificacaoItens
+                                value={editForm.values.verificacao_itens}
+                                onChange={(value) => editForm.setFieldValue('verificacao_itens', value)}
+                                errors={editForm.errors}
+                            />
+                        ) : (
+                            <>
+                                <CampoTiposServico
+                                    tipos={tipos_servico}
+                                    extras={editando?.tipos}
+                                    {...editForm.getInputProps('tipos')}
+                                />
+                                <Text size="sm" c="dimmed">Registro antigo — classificações não informadas.</Text>
+                                <Button variant="subtle" onClick={() => editForm.setFieldValue('verificacao_itens', novaVerificacao())}>
+                                    Classificar equipamentos e atividade
+                                </Button>
+                            </>
+                        )}
 
                         <Textarea label="Observações" minRows={3} {...editForm.getInputProps('observacao')} />
 

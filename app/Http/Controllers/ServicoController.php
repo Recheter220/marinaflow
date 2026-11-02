@@ -64,6 +64,8 @@ class ServicoController extends Controller
                 'tipos' => $s->tipos->map(fn (TipoServico $t): array => ['id' => $t->id, 'nome' => $t->nome]),
                 'data_execucao' => $s->data_execucao?->toDateString(),
                 'status' => $s->status,
+                'verificacao_itens' => $s->verificacao_itens,
+                'tipos_legados' => $s->tipos_legados,
                 'observacao' => $s->observacao,
                 'created_at' => $s->created_at?->toIso8601String(),
                 'updated_at' => $s->updated_at?->toIso8601String(),
