@@ -71,7 +71,7 @@ class ArquivoServiceTest extends TestCase
 
         $url = app(ArquivoService::class)->urlTemporaria('servicos/7/casco.jpg');
 
-        $this->assertStringStartsWith('https://conta.r2.cloudflarestorage.com/marinaflow/servicos/7/casco.jpg?', $url);
+        $this->assertStringStartsWith('https://marinaflow.conta.r2.cloudflarestorage.com/servicos/7/casco.jpg?', $url);
         $this->assertStringContainsString('X-Amz-Expires=900', $url);
         $this->assertStringContainsString('X-Amz-Signature=', $url);
     }

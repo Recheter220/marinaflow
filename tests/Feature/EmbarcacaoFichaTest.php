@@ -23,16 +23,18 @@ class EmbarcacaoFichaTest extends TestCase
         ServicoFoto::factory()->for($servico)->create();
 
         $this->actingAs($admin)
-            ->get(route('embarcacoes.show', $embarcacao))
+            ->get(route('embarcacoes.show', $embarcacao), [
+                'X-Inertia' => 'true',
+                'X-Inertia-Partial-Component' => 'EmbarcacaoFicha',
+'X-Inertia-Partial-Data' => 'embarcacao,resumo,servicos,fotos',
+            ])
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->component('EmbarcacaoFicha')
-                ->has('embarcacao')
-                ->where('embarcacao.id', $embarcacao->id)
-                ->where('embarcacao.nome', $embarcacao->nome)
-                ->has('resumo')
-                ->has('servicos')
-                ->has('fotos'));
+            ->assertJsonPath('component', 'EmbarcacaoFicha')
+            ->assertJsonPath('props.embarcacao.id', $embarcacao->id)
+            ->assertJsonPath('props.embarcacao.nome', $embarcacao->nome)
+            ->assertJsonStructure([
+                'props' => ['resumo', 'servicos', 'fotos']
+            ]);
     }
 
     public function test_funcionario_acessa_propria_embarcacao(): void
@@ -89,11 +91,14 @@ class EmbarcacaoFichaTest extends TestCase
         Servico::factory()->for($embarcacao)->create(['status' => Servico::STATUS_EM_EXECUCAO]);
 
         $this->actingAs($admin)
-            ->get(route('embarcacoes.show', $embarcacao))
+            ->get(route('embarcacoes.show', $embarcacao), [
+                'X-Inertia' => 'true',
+                'X-Inertia-Partial-Component' => 'EmbarcacaoFicha',
+                'X-Inertia-Partial-Data' => 'resumo',
+            ])
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->where('resumo.total_servicos', 4)
-                ->where('resumo.servicos_em_execucao', 1));
+            ->assertJsonPath('props.resumo.total_servicos', 4)
+            ->assertJsonPath('props.resumo.servicos_em_execucao', 1);
     }
 
     public function test_linha_do_tempo_e_paginada_em_20(): void
@@ -103,13 +108,16 @@ class EmbarcacaoFichaTest extends TestCase
         Servico::factory()->for($embarcacao)->count(25)->create();
 
         $this->actingAs($admin)
-            ->get(route('embarcacoes.show', $embarcacao))
+            ->get(route('embarcacoes.show', $embarcacao), [
+                'X-Inertia' => 'true',
+                'X-Inertia-Partial-Component' => 'EmbarcacaoFicha',
+                'X-Inertia-Partial-Data' => 'servicos',
+            ])
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->where('servicos.meta.per_page', 20)
-                ->where('servicos.meta.total', 25)
-                ->where('servicos.meta.last_page', 2)
-                ->count('servicos.data', 20));
+            ->assertJsonPath('props.servicos.meta.per_page', 20)
+            ->assertJsonPath('props.servicos.meta.total', 25)
+            ->assertJsonPath('props.servicos.meta.last_page', 2)
+            ->assertJsonCount(20, 'props.servicos.data');
     }
 
     public function test_linha_do_tempo_pagina_2_retorna_restantes(): void
@@ -119,11 +127,14 @@ class EmbarcacaoFichaTest extends TestCase
         Servico::factory()->for($embarcacao)->count(25)->create();
 
         $this->actingAs($admin)
-            ->get(route('embarcacoes.show', [$embarcacao, 'pagina' => 2]))
+            ->get(route('embarcacoes.show', [$embarcacao, 'pagina' => 2]), [
+                'X-Inertia' => 'true',
+                'X-Inertia-Partial-Component' => 'EmbarcacaoFicha',
+                'X-Inertia-Partial-Data' => 'servicos',
+            ])
             ->assertOk()
-            ->assertInertia(fn ($page) => $page
-                ->where('servicos.meta.current_page', 2)
-                ->count('servicos.data', 5));
+            ->assertJsonPath('props.servicos.meta.current_page', 2)
+            ->assertJsonCount(5, 'props.servicos.data');
     }
 
     public function test_sem_n_mais_1_com_20_servicos_com_fotos(): void
@@ -140,7 +151,11 @@ class EmbarcacaoFichaTest extends TestCase
         DB::enableQueryLog();
 
         $this->actingAs($admin)
-            ->get(route('embarcacoes.show', $embarcacao))
+            ->get(route('embarcacoes.show', $embarcacao), [
+                'X-Inertia' => 'true',
+                'X-Inertia-Partial-Component' => 'EmbarcacaoFicha',
+                'X-Inertia-Partial-Data' => 'servicos,resumo,fotos',
+            ])
             ->assertOk();
 
         $totalQueries = count(DB::getQueryLog());
