@@ -26,14 +26,14 @@ class EmbarcacaoFichaTest extends TestCase
             ->get(route('embarcacoes.show', $embarcacao), [
                 'X-Inertia' => 'true',
                 'X-Inertia-Partial-Component' => 'EmbarcacaoFicha',
-'X-Inertia-Partial-Data' => 'embarcacao,resumo,servicos,fotos',
+                'X-Inertia-Partial-Data' => 'embarcacao,resumo,servicos,fotos',
             ])
             ->assertOk()
             ->assertJsonPath('component', 'EmbarcacaoFicha')
             ->assertJsonPath('props.embarcacao.id', $embarcacao->id)
             ->assertJsonPath('props.embarcacao.nome', $embarcacao->nome)
             ->assertJsonStructure([
-                'props' => ['resumo', 'servicos', 'fotos']
+                'props' => ['resumo', 'servicos', 'fotos'],
             ]);
     }
 
