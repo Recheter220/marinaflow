@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Title, Button, Table, TextInput, Modal, Group, Stack, Select, NumberInput,
     Badge, ActionIcon, Text, Paper, Center, Tooltip,
@@ -7,7 +7,7 @@ import {
 import { useDebouncedValue } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconPlus, IconSearch, IconEdit, IconShip } from '@tabler/icons-react';
+import { IconPlus, IconSearch, IconEdit, IconShip, IconFileSearch } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
 
 const STATUS_LABELS = {
@@ -178,7 +178,7 @@ export default function Embarcacoes({ embarcacoes, funcionarios, filtros }) {
                                 <Table.Th>Cliente</Table.Th>
                                 <Table.Th>Responsável (Equipe)</Table.Th>
                                 <Table.Th>Status</Table.Th>
-                                {isAdmin && <Table.Th w={60}>Ações</Table.Th>}
+                                {isAdmin && <Table.Th w={90}>Ações</Table.Th>}
                             </Table.Tr>
                         </Table.Thead>
                         <Table.Tbody>
@@ -211,15 +211,40 @@ export default function Embarcacoes({ embarcacoes, funcionarios, filtros }) {
                                             {STATUS_LABELS[emb.status] || emb.status}
                                         </Badge>
                                     </Table.Td>
-                                    {isAdmin && (
+                                    {isAdmin ? (
                                         <Table.Td>
-                                            <Tooltip label="Editar">
+                                            <Group gap={4} wrap="nowrap">
+                                                <Tooltip label="Ver ficha">
+                                                    <ActionIcon
+                                                        component={Link}
+                                                        href={route('embarcacoes.show', emb.id)}
+                                                        variant="subtle"
+                                                        color="gray"
+                                                    >
+                                                        <IconFileSearch size={16} />
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                                <Tooltip label="Editar">
+                                                    <ActionIcon
+                                                        variant="subtle"
+                                                        color="blue"
+                                                        onClick={() => abrirEditar(emb)}
+                                                    >
+                                                        <IconEdit size={16} />
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                            </Group>
+                                        </Table.Td>
+                                    ) : (
+                                        <Table.Td>
+                                            <Tooltip label="Ver ficha">
                                                 <ActionIcon
+                                                    component={Link}
+                                                    href={route('embarcacoes.show', emb.id)}
                                                     variant="subtle"
-                                                    color="blue"
-                                                    onClick={() => abrirEditar(emb)}
+                                                    color="gray"
                                                 >
-                                                    <IconEdit size={16} />
+                                                    <IconFileSearch size={16} />
                                                 </ActionIcon>
                                             </Tooltip>
                                         </Table.Td>

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Title, Select, Table, Badge, Group, Stack, Paper, Text, ActionIcon,
     Tooltip, Menu, Modal, Textarea, Button, Center,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconHistory, IconDotsVertical, IconCheck, IconShip, IconEdit } from '@tabler/icons-react';
+import { IconHistory, IconDotsVertical, IconCheck, IconShip, IconEdit, IconFileSearch } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
 import CampoFotos from '@/components/CampoFotos';
 import GaleriaFotos from '@/components/GaleriaFotos';
@@ -224,7 +224,17 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
 
                                 return (
                                     <Table.Tr key={srv.id}>
-                                        <Table.Td>{srv.embarcacao_nome || '—'}</Table.Td>
+                                        <Table.Td>
+                                            <Text
+                                                size="sm"
+                                                component={Link}
+                                                href={route('embarcacoes.show', srv.embarcacao_id)}
+                                                c="blue"
+                                                style={{ textDecoration: 'none' }}
+                                            >
+                                                {srv.embarcacao_nome || '—'}
+                                            </Text>
+                                        </Table.Td>
                                         <Table.Td>{srv.funcionario_nome || '—'}</Table.Td>
                                         <Table.Td>
                                             <Text size="sm" lineClamp={2}>
@@ -267,6 +277,13 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
                                                         </Tooltip>
                                                     </Menu.Target>
                                                     <Menu.Dropdown>
+                                                        <Menu.Item
+                                                            component={Link}
+                                                            href={route('embarcacoes.show', srv.embarcacao_id)}
+                                                            leftSection={<IconFileSearch size={14} />}
+                                                        >
+                                                            Ver Ficha
+                                                        </Menu.Item>
                                                         {editavel && (
                                                             <Menu.Item
                                                                 leftSection={<IconEdit size={14} />}
