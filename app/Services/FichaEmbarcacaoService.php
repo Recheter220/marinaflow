@@ -37,15 +37,15 @@ class FichaEmbarcacaoService
     public function dados(Embarcacao $embarcacao): array
     {
         return [
-            'id'                  => $embarcacao->id,
-            'nome'                => $embarcacao->nome,
-            'identificacao'       => $embarcacao->identificacao,
-            'modelo'              => $embarcacao->modelo,
-            'tipo'                => $embarcacao->tipo,
-            'comprimento'         => $embarcacao->comprimento,
-            'ano_fabricacao'      => $embarcacao->ano_fabricacao,
+            'id' => $embarcacao->id,
+            'nome' => $embarcacao->nome,
+            'identificacao' => $embarcacao->identificacao,
+            'modelo' => $embarcacao->modelo,
+            'tipo' => $embarcacao->tipo,
+            'comprimento' => $embarcacao->comprimento,
+            'ano_fabricacao' => $embarcacao->ano_fabricacao,
             'cliente_responsavel' => $embarcacao->cliente_responsavel,
-            'status'              => $embarcacao->status,
+            'status' => $embarcacao->status,
         ];
     }
 
@@ -67,11 +67,11 @@ class FichaEmbarcacaoService
         $tiposFrequentes = $this->embarcacaoRepository->tiposFrequentes($embarcacao);
 
         return [
-            'total_servicos'       => $base->count(),
-            'ultimo_servico'       => $ultimoServico ? Carbon::parse($ultimoServico)->toDateString() : null,
+            'total_servicos' => $base->count(),
+            'ultimo_servico' => $ultimoServico ? Carbon::parse($ultimoServico)->toDateString() : null,
             'servicos_em_execucao' => $base->where('status', Servico::STATUS_EM_EXECUCAO)->count(),
-            'custo_pecas'          => null,
-            'tipos_frequentes'     => $tiposFrequentes,
+            'custo_pecas' => null,
+            'tipos_frequentes' => $tiposFrequentes,
         ];
     }
 
@@ -95,13 +95,13 @@ class FichaEmbarcacaoService
 
         $data = collect($paginador->items())
             ->map(fn (Servico $s): array => [
-                'id'            => $s->id,
+                'id' => $s->id,
                 'data_execucao' => $s->data_execucao?->toDateString(),
-                'status'        => $s->status,
+                'status' => $s->status,
                 'status_rotulo' => Servico::STATUS_ROTULOS[$s->status] ?? $s->status,
-                'observacao'    => $s->observacao,
-                'funcionario'   => $s->funcionario ? [
-                    'id'   => $s->funcionario->id,
+                'observacao' => $s->observacao,
+                'funcionario' => $s->funcionario ? [
+                    'id' => $s->funcionario->id,
                     'nome' => $s->funcionario->nome,
                 ] : null,
                 'tipos' => $s->tipos
@@ -117,9 +117,9 @@ class FichaEmbarcacaoService
             'data' => $data,
             'meta' => [
                 'current_page' => $paginador->currentPage(),
-                'last_page'    => $paginador->lastPage(),
-                'per_page'     => $paginador->perPage(),
-                'total'        => $paginador->total(),
+                'last_page' => $paginador->lastPage(),
+                'per_page' => $paginador->perPage(),
+                'total' => $paginador->total(),
             ],
         ];
     }
@@ -151,12 +151,12 @@ class FichaEmbarcacaoService
                 's.data_execucao as servico_data',
             ])
             ->map(fn (ServicoFoto $foto): array => [
-                'id'            => $foto->id,
-                'servico_id'    => $foto->servico_id,
-                'disk'          => $foto->disk,
-                'path'          => $foto->path,
+                'id' => $foto->id,
+                'servico_id' => $foto->servico_id,
+                'disk' => $foto->disk,
+                'path' => $foto->path,
                 'nome_original' => $foto->nome_original,
-                'servico_data'  => $foto->servico_data
+                'servico_data' => $foto->servico_data
                     ? Carbon::parse($foto->servico_data)->toDateString()
                     : null,
                 'url' => Storage::disk($foto->disk)

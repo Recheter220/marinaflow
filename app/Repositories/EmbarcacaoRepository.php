@@ -22,7 +22,7 @@ class EmbarcacaoRepository
             ->limit($limite)
             ->get(['ts.nome', DB::raw('COUNT(*) as total')])
             ->map(fn (object $row): array => [
-                'nome'  => $row->nome,
+                'nome' => $row->nome,
                 'total' => (int) $row->total,
             ])
             ->all();
