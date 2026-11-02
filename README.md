@@ -134,6 +134,17 @@ O seeder cria um usuário administrador para o primeiro acesso:
 
 Demais usuários são criados por convite (link enviado por e-mail).
 
+Em `APP_ENV=local` o seeder também monta uma base de demonstração
+(`DemonstracaoSeeder`): quatro funcionários (um inativo), seis embarcações e
+quinze serviços, nos três status (inclusive `em_execucao`, como registro
+legado), cada um com uma foto. Os funcionários entram com senha `senha123`:
+
+- `carlos@marinaflow.local`
+- `juliana@marinaflow.local`
+- `rafael@marinaflow.local`
+
+Se a base local for perdida, `php artisan migrate:fresh --seed` recria tudo.
+
 ### E-mails em desenvolvimento
 
 O ambiente Sail inclui o [Mailpit](https://mailpit.axllent.org/) como servidor
@@ -212,17 +223,31 @@ produção.
 
 ## Rodando os testes
 
-Com Sail:
+São duas suítes: a do backend (PHPUnit, em `tests/Feature` e `tests/Unit`) e a do
+frontend (Vitest + Testing Library em jsdom, em `tests/js`). A do frontend não
+precisa de servidor Laravel no ar nem de rede.
 
-```bash
-./vendor/bin/sail artisan test
-```
+| Suíte | Com Sail | Sem Sail |
+|---|---|---|
+| Backend | `./vendor/bin/sail artisan test` | `php artisan test` |
+| Frontend | `./vendor/bin/sail npm run test` | `npm run test` |
+| Frontend, em modo watch | `./vendor/bin/sail npm run test:watch` | `npm run test:watch` |
 
-Sem Sail:
+Sem Sail, o frontend exige Node 22 ou mais novo (Vitest e jsdom não rodam no 20).
 
-```bash
-php artisan test
-```
+O backend roda em SQLite em memória (`phpunit.xml`). O CI roda a mesma suíte uma
+segunda vez contra PostgreSQL 16, o banco de produção, para que diferença de
+dialeto falhe no pull request e não no deploy.
+
+### Integração contínua
+
+`.github/workflows/ci.yml` roda em todo push e pull request:
+
+- **`php`** — `pint --test`, `php artisan test` em SQLite e de novo em PostgreSQL 16;
+- **`js`** — `npm run test` e `npm run build`.
+
+Teste que falha aparece no log do job com arquivo e linha; os do Vitest também
+viram anotação no próprio diff do pull request.
 
 ## Formatação de código
 

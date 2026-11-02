@@ -15,9 +15,19 @@ class ServicoStatusPermissaoTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** Aborta antes de migrate:fresh se esta classe não estiver isolada em memória. */
+    /**
+     * Aborta antes de migrate:fresh se esta classe não estiver isolada em memória.
+     * A exceção é o PostgreSQL descartável do CI (RF-01.7 da MF-01), que existe só
+     * para o job e morre com ele.
+     */
     protected function beforeRefreshingDatabase(): void
     {
+        if ($this->app->environment('testing')
+            && getenv('GITHUB_ACTIONS') === 'true'
+            && config('database.default') === 'pgsql') {
+            return;
+        }
+
         if (! $this->app->environment('testing')
             || config('database.default') !== 'sqlite'
             || config('database.connections.sqlite.driver') !== 'sqlite'
@@ -58,7 +68,7 @@ class ServicoStatusPermissaoTest extends TestCase
 
         $this->actingAs($user)->putJson(route('servicos.update', $servico), [
             'status' => $destino,
-            'descricao' => ['Buzina'],
+            'tipos' => $this->idsDosTipos('Buzina'),
             'observacao' => 'Tentativa de alteração',
         ])->assertForbidden();
 
@@ -80,7 +90,7 @@ class ServicoStatusPermissaoTest extends TestCase
     {
         [$user, $servico] = $this->servicoDoFuncionario($status);
         $payload = [
-            'descricao' => ['Buzina'],
+            'tipos' => $this->idsDosTipos('Buzina'),
             'observacao' => 'Dados editados',
             'data_execucao' => '2026-10-01',
         ];
@@ -94,7 +104,7 @@ class ServicoStatusPermissaoTest extends TestCase
 
         $servico->refresh();
         $this->assertSame($status, $servico->status);
-        $this->assertSame(['Buzina'], $servico->descricao);
+        $this->assertEqualsCanonicalizing(['Buzina'], $servico->tipos->pluck('nome')->all());
         $this->assertSame('Dados editados', $servico->observacao);
         $this->assertSame('2026-10-01', $servico->data_execucao->toDateString());
         $this->assertSame($user->funcionario_id, $servico->funcionario_id);
@@ -108,7 +118,7 @@ class ServicoStatusPermissaoTest extends TestCase
 
         $this->actingAs($user)->putJson(route('servicos.update', $servico), [
             'status' => Servico::STATUS_CONCLUIDO,
-            'descricao' => ['Buzina'],
+            'tipos' => $this->idsDosTipos('Buzina'),
         ])->assertForbidden();
 
         $this->assertSame($antes, $servico->refresh()->getRawOriginal());
@@ -122,7 +132,7 @@ class ServicoStatusPermissaoTest extends TestCase
 
         $this->actingAs($user)->putJson(route('servicos.update', $servico), [
             'status' => $servico->status,
-            'descricao' => ['Buzina'],
+            'tipos' => $this->idsDosTipos('Buzina'),
         ])->assertForbidden();
 
         $this->assertSame($antes, $servico->refresh()->getRawOriginal());

@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'embarcacao_id',
     'funcionario_id',
-    'descricao',
     'data_execucao',
     'status',
     'observacao',
@@ -30,6 +31,13 @@ class Servico extends Model
 
     public const STATUS_CONCLUIDO = 'concluido';
 
+    /** Rótulos de `Historico.jsx`, para o que sai do servidor (relatório). */
+    public const STATUS_ROTULOS = [
+        self::STATUS_EM_EXECUCAO => 'Em Execução',
+        self::STATUS_AGUARDANDO_VISTORIA => 'Aguardando Vistoria',
+        self::STATUS_CONCLUIDO => 'Concluído',
+    ];
+
     /** Valores aceitos no payload; as transições são validadas em ServicoService. */
     public const STATUS_EDITAVEIS = [
         self::STATUS_EM_EXECUCAO,
@@ -44,7 +52,6 @@ class Servico extends Model
     {
         return [
             'data_execucao' => 'date',
-            'descricao' => 'array',
         ];
     }
 
@@ -56,6 +63,17 @@ class Servico extends Model
     public function funcionario(): BelongsTo
     {
         return $this->belongsTo(Funcionario::class);
+    }
+
+    /** Itens do serviço (D-04). */
+    public function tipos(): BelongsToMany
+    {
+        return $this->belongsToMany(TipoServico::class, 'servico_tipo_servico');
+    }
+
+    public function fotos(): HasMany
+    {
+        return $this->hasMany(ServicoFoto::class)->orderBy('ordem')->orderBy('id');
     }
 
     public function createdBy(): BelongsTo

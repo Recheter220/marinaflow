@@ -21,9 +21,9 @@ class StoreServicoRequest extends FormRequest
         return [
             'embarcacao_id' => ['required', 'integer', Rule::exists('embarcacoes', 'id')],
             'funcionario_id' => ['required', 'integer', Rule::exists('funcionarios', 'id')],
-            'descricao' => ['required', 'array', 'min:1'],
-            'descricao.*' => ['required', 'string'],
-            'data_execucao' => ['required', 'date'],
+            'tipos' => ['required', 'array', 'min:1'],
+            'tipos.*' => ['integer', 'distinct', Rule::exists('tipos_servico', 'id')->where('ativo', true)],
+            'data_execucao' => ['required', 'date_format:Y-m-d'],
             'observacao' => ['nullable', 'string'],
         ];
     }
@@ -36,8 +36,10 @@ class StoreServicoRequest extends FormRequest
         return [
             'embarcacao_id.exists' => 'Embarcação selecionada não existe.',
             'funcionario_id.exists' => 'Funcionário selecionado não existe.',
-            'descricao.required' => 'Descrição do serviço é obrigatória.',
+            'tipos.required' => 'Selecione ao menos um serviço realizado.',
+            'tipos.*.exists' => 'Tipo de serviço inexistente ou fora de uso.',
             'data_execucao.required' => 'Data de execução é obrigatória.',
+            'data_execucao.date_format' => 'Data de execução deve estar no formato AAAA-MM-DD, sem hora.',
         ];
     }
 }

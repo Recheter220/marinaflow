@@ -7,7 +7,9 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\EmbarcacaoController;
 use App\Http\Controllers\FuncionarioController;
 use App\Http\Controllers\IntegracaoCepController;
+use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\ServicoController;
+use App\Http\Controllers\ServicoFotoController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +31,7 @@ Route::middleware(['auth', 'ativo'])->group(function () {
     Route::redirect('/', '/embarcacoes')->name('dashboard');
 
     Route::get('/embarcacoes', [EmbarcacaoController::class, 'index'])->name('embarcacoes.index');
+    Route::get('/embarcacoes/{embarcacao}', [EmbarcacaoController::class, 'show'])->name('embarcacoes.show');
     Route::get('/funcionarios', [FuncionarioController::class, 'index'])->name('funcionarios.index');
     Route::get('/integracoes/cep/{cep}', [IntegracaoCepController::class, 'show'])
         ->middleware('throttle:30,1')
@@ -38,6 +41,13 @@ Route::middleware(['auth', 'ativo'])->group(function () {
     Route::post('/servicos', [ServicoController::class, 'store'])->name('servicos.store');
     Route::get('/historico', [ServicoController::class, 'index'])->name('servicos.index');
     Route::put('/servicos/{servico}', [ServicoController::class, 'update'])->name('servicos.update');
+
+    Route::post('/servicos/{servico}/fotos', [ServicoFotoController::class, 'store'])->name('servicos.fotos.store');
+    Route::get('/servicos/fotos/{foto}', [ServicoFotoController::class, 'show'])->name('servicos.fotos.show');
+    Route::delete('/servicos/fotos/{foto}', [ServicoFotoController::class, 'destroy'])->name('servicos.fotos.destroy');
+
+    Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios.index');
+    Route::get('/relatorios/servicos', [RelatorioController::class, 'servicos'])->name('relatorios.servicos');
 
     Route::get('/trocar-senha', [PasswordController::class, 'edit'])->name('senha.edit');
     Route::put('/trocar-senha', [PasswordController::class, 'update'])->name('senha.update');
