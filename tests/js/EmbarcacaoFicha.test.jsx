@@ -3,14 +3,20 @@ import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import EmbarcacaoFicha from '@/pages/EmbarcacaoFicha';
 import { admin, funcionario, renderPagina } from './render';
+import { router } from '@inertiajs/react';
+
 
 vi.mock('@inertiajs/react', async (importOriginal) => {
-    const original = await importOriginal();
-    const { createElement, forwardRef, Suspense } = await import('react');
-
+    const actual = await importOriginal();
     return {
-        ...original,
-        Deferred: ({ children, fallback }) => createElement(Suspense, { fallback }, children),
+        ...actual,
+        usePage: vi.fn(),
+        router: {
+            get: vi.fn(),
+        },
+        Head: ({ children }) => <>{children}</>,
+        // Adicione esta linha para o Deferred funcionar no teste:
+        Deferred: ({ children }) => <>{children}</>,
     };
 });
 
@@ -134,6 +140,7 @@ describe('EmbarcacaoFicha', () => {
     });
 
     it('exibe botão "Carregar mais" quando há mais páginas', () => {
+
         renderFicha({
             servicos: {
                 ...servicos,
@@ -145,7 +152,6 @@ describe('EmbarcacaoFicha', () => {
     });
 
     it('navega para a página seguinte ao clicar em "Carregar mais"', async () => {
-        const { router } = await import('@inertiajs/react');
 
         renderFicha({
             servicos: {
@@ -177,7 +183,6 @@ describe('EmbarcacaoFicha', () => {
 
     it('exibe os tipos frequentes na aba Resumo', async () => {
         renderFicha();
-
         await userEvent.click(screen.getByRole('tab', { name: /Resumo/i }));
 
         await waitFor(() => {
