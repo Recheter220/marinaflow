@@ -10,6 +10,8 @@ import { notifications } from '@mantine/notifications';
 import { IconPlus, IconSearch, IconEdit, IconUsers } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
 import { formatPhoneNumber, normalizePhoneNumber } from '@/utils/phone';
+import CamposEndereco from '@/components/CamposEndereco';
+import { formatCep } from '@/utils/cep';
 
 export default function Funcionarios({ funcionarios, filtros }) {
     const { auth, flash } = usePage().props;
@@ -40,7 +42,10 @@ export default function Funcionarios({ funcionarios, filtros }) {
     }, [buscaDebounced]);
 
     const form = useForm({
-        initialValues: { nome: '', cargo: '', telefone: '', email: '', ativo: true },
+        initialValues: {
+            nome: '', cargo: '', telefone: '', email: '', ativo: true,
+            cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '',
+        },
         validate: {
             nome: (v) => (v.trim().length === 0 ? 'Nome é obrigatório' : null),
             email: (v) => (!v || /^\S+@\S+\.\S+$/.test(v) ? null : 'Informe um e-mail válido'),
@@ -61,6 +66,13 @@ export default function Funcionarios({ funcionarios, filtros }) {
             telefone: formatPhoneNumber(func.telefone),
             email: '',
             ativo: func.ativo,
+            cep: formatCep(func.cep),
+            logradouro: func.logradouro || '',
+            numero: func.numero || '',
+            complemento: func.complemento || '',
+            bairro: func.bairro || '',
+            cidade: func.cidade || '',
+            uf: func.uf || '',
         });
         setModalAberto(true);
     };
@@ -78,6 +90,16 @@ export default function Funcionarios({ funcionarios, filtros }) {
 
         setSalvando(true);
 
+        const endereco = {
+            cep: values.cep || null,
+            logradouro: values.logradouro || null,
+            numero: values.numero || null,
+            complemento: values.complemento || null,
+            bairro: values.bairro || null,
+            cidade: values.cidade || null,
+            uf: values.uf || null,
+        };
+
         if (editando) {
             router.put(
                 route('funcionarios.update', editando.id),
@@ -86,6 +108,7 @@ export default function Funcionarios({ funcionarios, filtros }) {
                     cargo: values.cargo || null,
                     telefone: normalizePhoneNumber(values.telefone) || null,
                     ativo: values.ativo,
+                    ...endereco,
                 },
                 opcoes,
             );
@@ -97,6 +120,7 @@ export default function Funcionarios({ funcionarios, filtros }) {
                     cargo: values.cargo || null,
                     telefone: normalizePhoneNumber(values.telefone) || null,
                     email: values.email || null,
+                    ...endereco,
                 },
                 opcoes,
             );
@@ -213,6 +237,7 @@ export default function Funcionarios({ funcionarios, filtros }) {
                                 form.setFieldValue('telefone', formatPhoneNumber(event.currentTarget.value))
                             }
                         />
+                        <CamposEndereco form={form} />
                         {/* Substitui o usuário auto-criado com senha temporária do app Tauri. */}
                         {!editando && (
                             <TextInput
