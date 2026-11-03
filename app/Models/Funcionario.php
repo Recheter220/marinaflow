@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['nome', 'cargo', 'telefone', 'ativo'])]
+#[Fillable(['nome', 'cargo', 'telefone', 'ativo', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf'])]
 class Funcionario extends Model
 {
     use HasFactory;
