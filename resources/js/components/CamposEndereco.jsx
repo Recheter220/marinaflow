@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Group, Loader, SimpleGrid, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { formatCep } from '@/utils/cep';
@@ -10,6 +10,8 @@ import { formatCep } from '@/utils/cep';
  */
 export default function CamposEndereco({ form }) {
     const [buscando, setBuscando] = useState(false);
+
+    const numeroRef = useRef(null);
 
     const buscarEndereco = async (cepDigitos) => {
         setBuscando(true);
@@ -34,6 +36,7 @@ export default function CamposEndereco({ form }) {
                 cidade: dados.cidade ?? '',
                 uf: dados.uf ?? '',
             });
+            numeroRef.current?.focus();
         } catch {
             notifications.show({
                 message: 'Não foi possível consultar o CEP. Preencha o endereço manualmente.',
@@ -67,7 +70,7 @@ export default function CamposEndereco({ form }) {
             />
             <TextInput label="Logradouro" placeholder="Rua, avenida..." {...form.getInputProps('logradouro')} />
             <SimpleGrid cols={2}>
-                <TextInput label="Número" {...form.getInputProps('numero')} />
+                <TextInput label="Número" ref={numeroRef} {...form.getInputProps('numero')} />
                 <TextInput label="Complemento" {...form.getInputProps('complemento')} />
             </SimpleGrid>
             <TextInput label="Bairro" {...form.getInputProps('bairro')} />
