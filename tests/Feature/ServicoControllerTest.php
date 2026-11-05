@@ -24,15 +24,15 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'tipos' => $this->idsDosTipos('Limpeza', 'Motor'),
                 'data_execucao' => '2026-01-15',
             ])
             ->assertRedirect();
 
         $servico = Servico::query()->firstOrFail();
-        $this->assertEqualsCanonicalizing(['Limpeza', 'Motor'], $servico->tipos->pluck('nome')->all());
+        $this->assertSame(['Limpeza'], $servico->tipos->pluck('nome')->all());
         $this->assertSame(Servico::STATUS_AGUARDANDO_VISTORIA, $servico->status);
         $this->assertSame($admin->id, $servico->created_by_user_id);
         $this->assertSame($admin->id, $servico->updated_by_user_id);
@@ -48,9 +48,9 @@ class ServicoControllerTest extends TestCase
             foreach ([Servico::STATUS_EM_EXECUCAO, Servico::STATUS_CONCLUIDO, 'invalido'] as $status) {
                 $this->actingAs($autor)
                     ->post(route('servicos.store'), [
+                        'verificacao_itens' => $this->verificacaoValida(),
                         'embarcacao_id' => $embarcacao->id,
                         'funcionario_id' => $funcionario->id,
-                        'tipos' => $this->idsDosTipos('Limpeza'),
                         'data_execucao' => '2026-01-15',
                         'status' => $status,
                     ])
@@ -75,9 +75,9 @@ class ServicoControllerTest extends TestCase
 
         foreach ([Servico::STATUS_EM_EXECUCAO, Servico::STATUS_CONCLUIDO] as $status) {
             $servico = app(ServicoService::class)->criar([
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
                 'data_execucao' => '2026-01-15',
                 'status' => $status,
             ], $admin);
@@ -94,9 +94,9 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => 999,
                 'funcionario_id' => $funcionario->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
                 'data_execucao' => '2026-01-15',
             ])
             ->assertSessionHasErrors('embarcacao_id');
@@ -110,9 +110,9 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => 999,
-                'tipos' => $this->idsDosTipos('Limpeza'),
                 'data_execucao' => '2026-01-15',
             ])
             ->assertSessionHasErrors('funcionario_id');
@@ -126,9 +126,9 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
                 'data_execucao' => '2026-01-15',
             ])
             ->assertSessionHasErrors('funcionario_id');
@@ -136,7 +136,7 @@ class ServicoControllerTest extends TestCase
         $this->assertDatabaseCount('servicos', 0);
     }
 
-    public function test_tipos_e_data_sao_obrigatorios(): void
+    public function test_verificacao_e_data_sao_obrigatorias(): void
     {
         $admin = User::factory()->admin()->create();
         $funcionario = Funcionario::factory()->create();
@@ -147,7 +147,7 @@ class ServicoControllerTest extends TestCase
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
             ])
-            ->assertSessionHasErrors(['tipos', 'data_execucao']);
+            ->assertSessionHasErrors(['verificacao_itens', 'data_execucao']);
     }
 
     /**
@@ -162,9 +162,9 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($admin)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => Embarcacao::factory()->create()->id,
                 'funcionario_id' => Funcionario::factory()->create()->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
                 'data_execucao' => '2026-11-01T00:30:43.000Z',
             ])
             ->assertSessionHasErrors($mensagem);
@@ -186,9 +186,9 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $outro->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
                 'data_execucao' => '2026-01-15',
             ])
             ->assertRedirect();
@@ -206,9 +206,9 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $outro->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
                 'data_execucao' => '2026-01-15',
             ])
             ->assertForbidden();
@@ -224,9 +224,9 @@ class ServicoControllerTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('servicos.store'), [
+                'verificacao_itens' => $this->verificacaoValida(),
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
                 'data_execucao' => '2026-01-15',
             ])
             ->assertForbidden();
@@ -393,7 +393,7 @@ class ServicoControllerTest extends TestCase
                 'tipos' => [$inativo->id],
                 'data_execucao' => '2026-01-15',
             ])
-            ->assertSessionHasErrors('tipos.0');
+            ->assertSessionHasErrors('tipos');
 
         $this->assertDatabaseCount('servicos', 0);
     }

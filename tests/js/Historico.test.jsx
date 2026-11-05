@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { router } from '@inertiajs/react';
 import Historico from '@/pages/Historico';
+import { novaVerificacao } from '@/components/VerificacaoItens';
 import { admin, funcionario, renderPagina } from './render';
 
 const embarcacoes = [
@@ -79,4 +80,46 @@ describe('Historico', () => {
 
         expect(screen.getByRole('cell', { name: rotulo })).toBeInTheDocument();
     });
+    it('exibe MEL02 junto das observações e fotos existentes', () => {
+        const verificacao = novaVerificacao();
+        Object.keys(verificacao.equipamentos).forEach((codigo) => {
+            verificacao.equipamentos[codigo] = 'nao_se_aplica';
+        });
+        verificacao.equipamentos.motor = 'com_defeito';
+        verificacao.atividade = 'limpeza';
+        renderHistorico({ servicos: [servico({
+            verificacao_itens: verificacao,
+            observacao: 'Motor falha após ligar',
+            fotos: [{ id: 5, url: '/foto-assinada', nome_original: 'motor.jpg' }],
+        })] });
+        expect(screen.getByText('Motor: Com defeito')).toBeInTheDocument();
+        expect(screen.getByText('Limpeza — OK (executada)')).toBeInTheDocument();
+        expect(screen.getByText('Obs: Motor falha após ligar')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Ampliar foto motor.jpg' })).toBeInTheDocument();
+        expect(screen.queryByText('Registro antigo — sem classificação MEL02')).not.toBeInTheDocument();
+    });
+
+    it('mantém itens legados sem inferir classificações', () => {
+        renderHistorico({ servicos: [servico({ tipos: [{ id: 2, nome: 'Motor' }] })] });
+        expect(screen.getByText('Motor')).toBeInTheDocument();
+        expect(screen.getByText('Registro antigo — sem classificação MEL02')).toBeInTheDocument();
+        expect(screen.queryByText('Motor: Funcionamento OK')).not.toBeInTheDocument();
+    });
+
+    it('mostra itens originais e tipos vinculados depois de classificar legado', () => {
+        const verificacao = novaVerificacao();
+        Object.keys(verificacao.equipamentos).forEach((codigo) => {
+            verificacao.equipamentos[codigo] = 'funcionamento_ok';
+        });
+        verificacao.atividade = 'lavagem';
+        renderHistorico({ servicos: [servico({
+            verificacao_itens: verificacao,
+            tipos_legados: [{ id: 1, nome: 'Limpeza' }, { id: 3, nome: 'Pintura' }],
+            tipos: [{ id: 2, nome: 'Lavagem' }, { id: 3, nome: 'Pintura' }],
+        })] });
+        expect(screen.getByText('Itens do registro original: Limpeza, Pintura')).toBeInTheDocument();
+        expect(screen.getByText('Tipos vinculados: Lavagem, Pintura')).toBeInTheDocument();
+        expect(screen.getByText('Lavagem — OK (executada)')).toBeInTheDocument();
+    });
+
 });

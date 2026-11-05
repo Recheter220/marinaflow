@@ -258,9 +258,9 @@ class ServicoFotoTest extends TestCase
         $admin = User::factory()->admin()->create();
 
         $response = $this->actingAs($admin)->post(route('servicos.store'), [
+            'verificacao_itens' => $this->verificacaoValida(),
             'embarcacao_id' => Embarcacao::factory()->create()->id,
             'funcionario_id' => Funcionario::factory()->create()->id,
-            'tipos' => $this->idsDosTipos('Limpeza'),
             'data_execucao' => '2026-01-15',
         ]);
 

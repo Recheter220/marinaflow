@@ -17,9 +17,9 @@ class TipoServicoBackfillTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_descricao_existente_vira_ligacao_com_o_catalogo_e_volta_no_rollback(): void
+    public function test_descricao_existente_vira_ligacao_e_rollback_destrutivo_e_bloqueado(): void
     {
-        $this->artisan('migrate:rollback', ['--step' => 2])->assertSuccessful();
+        $this->artisan('migrate:rollback', ['--step' => 6])->assertSuccessful();
 
         $servicoId = DB::table('servicos')->insertGetId([
             'embarcacao_id' => Embarcacao::factory()->create()->id,
@@ -36,13 +36,20 @@ class TipoServicoBackfillTest extends TestCase
         $this->assertDatabaseHas('tipos_servico', ['nome' => 'Pintura', 'ativo' => false]);
         $this->assertEqualsCanonicalizing(['Motor', 'Pintura'], $this->nomesLigados($servicoId));
 
-        $this->artisan('migrate:rollback', ['--step' => 2])->assertSuccessful();
+        $migrations = DB::table('migrations')->count();
+        try {
+            $this->artisan('migrate:rollback', ['--step' => 6]);
+            $this->fail('Rollback deveria proteger o arquivo histórico.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('Rollback bloqueado', $e->getMessage());
+        }
 
+        $this->assertSame($migrations, DB::table('migrations')->count());
         $this->assertSame(
-            ['Motor', 'Pintura'],
-            json_decode(DB::table('servicos')->where('id', $servicoId)->value('descricao'), true),
+            json_encode(['Motor', ' motor ', 'Pintura']),
+            DB::table('servicos')->where('id', $servicoId)->value('descricao_legada'),
         );
-        $this->assertDatabaseCount('tipos_servico', 0);
+        $this->assertEqualsCanonicalizing(['Motor', 'Pintura'], $this->nomesLigados($servicoId));
     }
 
     /**
