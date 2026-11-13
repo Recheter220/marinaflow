@@ -21,7 +21,7 @@ class RelatorioServicoTest extends TestCase
     {
         parent::setUp();
 
-        // `fim` não pode passar de amanhã; agosto inteiro precisa estar no passado.
+        // Relógio fixo no meio de setembro: o mês corrente ainda não terminou.
         $this->travelTo('2026-09-10 12:00:00');
     }
 
@@ -159,8 +159,17 @@ class RelatorioServicoTest extends TestCase
         return [
             'fim antes do início' => ['2026-08-31', '2026-08-01', 'A data final deve ser igual ou posterior à inicial.'],
             'mais de 366 dias' => ['2025-01-01', '2026-01-02', 'O período pode ter no máximo 366 dias.'],
-            'fim no futuro' => ['2026-09-01', '2026-09-30', 'A data final não pode estar no futuro.'],
         ];
+    }
+
+    public function test_mes_corrente_inteiro_e_aceito_mesmo_com_fim_no_futuro(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('relatorios.servicos', ['inicio' => '2026-09-01', 'fim' => '2026-09-30']))
+            ->assertOk()
+            ->assertDownload('relatorio-servicos-2026-09.pdf');
     }
 
     public function test_ano_bissexto_inteiro_cabe_no_limite_de_366_dias(): void
