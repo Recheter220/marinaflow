@@ -34,6 +34,7 @@ class EmbarcacaoController extends Controller
                 ->get()
                 ->map(fn (Embarcacao $e): array => [
                     'id' => $e->id,
+                    'ulid' => $e->ulid,
                     'nome' => $e->nome,
                     'identificacao' => $e->identificacao,
                     'modelo' => $e->modelo,

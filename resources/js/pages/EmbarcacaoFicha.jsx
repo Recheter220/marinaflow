@@ -7,9 +7,10 @@ import {
 import { useState } from 'react';
 import {
     IconAnchor, IconCalendar, IconChartBar, IconPhoto,
-    IconRuler, IconTimeline, IconTool, IconUser,
+    IconQrcode, IconRuler, IconTimeline, IconTool, IconUser,
 } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
+import QrCodeModal from '@/components/QrCodeModal';
 
 const STATUS_LABELS = {
     ativa: { label: 'Ativa', color: 'green' },
@@ -276,6 +277,7 @@ function AbaResumo({ resumo }) {
 
 export default function EmbarcacaoFicha({ embarcacao, resumo, servicos, fotos }) {
     const status = STATUS_LABELS[embarcacao.status] ?? { label: embarcacao.status, color: 'gray' };
+    const [qrAberto, setQrAberto] = useState(false);
 
     return (
         <>
@@ -289,8 +291,19 @@ export default function EmbarcacaoFicha({ embarcacao, resumo, servicos, fotos })
                         <Text size="xs" c="dimmed" ff="monospace">{embarcacao.identificacao}</Text>
                     </div>
                 </Group>
-                <Badge variant="light" color={status.color} size="lg">{status.label}</Badge>
+                <Group gap="sm">
+                    <Button
+                        variant="default"
+                        leftSection={<IconQrcode size={16} />}
+                        onClick={() => setQrAberto(true)}
+                    >
+                        QR Code
+                    </Button>
+                    <Badge variant="light" color={status.color} size="lg">{status.label}</Badge>
+                </Group>
             </Group>
+
+            <QrCodeModal embarcacao={qrAberto ? embarcacao : null} onClose={() => setQrAberto(false)} />
 
             <Paper shadow="xs" p="md" radius="md" mb="lg">
                 <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">

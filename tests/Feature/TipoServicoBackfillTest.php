@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Embarcacao;
 use App\Models\Funcionario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +21,12 @@ class TipoServicoBackfillTest extends TestCase
         $this->artisan('migrate:rollback', ['--step' => $this->passosAteOBackfill()])->assertSuccessful();
 
         $servicoId = DB::table('servicos')->insertGetId([
-            'embarcacao_id' => Embarcacao::factory()->create()->id,
+            // Insert cru: o schema está voltado para antes de colunas que o modelo de hoje preenche (MF-09: `ulid`).
+            'embarcacao_id' => DB::table('embarcacoes')->insertGetId([
+                'nome' => 'Maré Alta',
+                'identificacao' => 'BR-0001',
+                'status' => 'ativa',
+            ]),
             'funcionario_id' => Funcionario::factory()->create()->id,
             'descricao' => json_encode(['Motor', ' motor ', 'Pintura']),
             'data_execucao' => '2026-08-10',
