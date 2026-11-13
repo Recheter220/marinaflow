@@ -46,6 +46,16 @@ class Servico extends Model
     ];
 
     /**
+     * Atividade executada da verificação (MEL02) => tipo do catálogo que a
+     * representa. A escolha vira o vínculo com esse tipo em `servico_tipo_servico`,
+     * e o serviço continua contando no relatório e na ficha da embarcação.
+     */
+    public const ATIVIDADES = [
+        'lavagem' => 'Lavagem',
+        'limpeza' => 'Limpeza',
+    ];
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -69,6 +79,23 @@ class Servico extends Model
     public function tipos(): BelongsToMany
     {
         return $this->belongsToMany(TipoServico::class, 'servico_tipo_servico');
+    }
+
+    /** Condições da vistoria (MEL02); equipamento sem vínculo "não se aplica". */
+    public function equipamentos(): BelongsToMany
+    {
+        return $this->belongsToMany(Equipamento::class, 'servico_equipamento')->withPivot('condicao');
+    }
+
+    /**
+     * Atividade lida dos tipos já carregados. Registro antigo com as duas, ou
+     * com nenhuma, fica sem atividade em vez de ganhar uma por palpite.
+     */
+    public function atividadeExecutada(): ?string
+    {
+        $atividades = array_values(array_intersect(Servico::ATIVIDADES, $this->tipos->pluck('nome')->all()));
+
+        return count($atividades) === 1 ? array_search($atividades[0], Servico::ATIVIDADES, true) : null;
     }
 
     public function fotos(): HasMany

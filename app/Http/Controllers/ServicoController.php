@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreServicoRequest;
 use App\Http\Requests\UpdateServicoRequest;
 use App\Models\Embarcacao;
+use App\Models\Equipamento;
 use App\Models\Funcionario;
 use App\Models\Servico;
 use App\Models\ServicoFoto;
@@ -36,7 +37,7 @@ class ServicoController extends Controller
                 ->ativos()
                 ->orderBy('nome')
                 ->get(['id', 'nome', 'cargo']),
-            'tipos_servico' => $this->tiposAtivos(),
+            'equipamentos' => $this->equipamentos(),
         ]);
     }
 
@@ -51,7 +52,7 @@ class ServicoController extends Controller
         $servicos = Servico::query()
             ->forUser($request->user())
             ->when($embarcacaoId, fn ($q) => $q->where('embarcacao_id', $embarcacaoId))
-            ->with(['embarcacao:id,nome,identificacao', 'funcionario:id,nome', 'tipos:id,nome', 'fotos'])
+            ->with(['embarcacao:id,nome,identificacao', 'funcionario:id,nome', 'tipos:id,nome', 'equipamentos:id', 'fotos'])
             ->latest('data_execucao')
             ->latest('id')
             ->get()
@@ -62,6 +63,12 @@ class ServicoController extends Controller
                 'funcionario_id' => $s->funcionario_id,
                 'funcionario_nome' => $s->funcionario?->nome,
                 'tipos' => $s->tipos->map(fn (TipoServico $t): array => ['id' => $t->id, 'nome' => $t->nome]),
+                'atividade' => $s->atividadeExecutada(),
+                // Só os vinculados; o que faltar a tela mostra como "não se aplica".
+                'equipamentos' => $s->equipamentos->map(fn (Equipamento $e): array => [
+                    'id' => $e->id,
+                    'condicao' => $e->pivot->condicao,
+                ]),
                 'data_execucao' => $s->data_execucao?->toDateString(),
                 'status' => $s->status,
                 'observacao' => $s->observacao,
@@ -80,7 +87,7 @@ class ServicoController extends Controller
                 ->forUser($request->user())
                 ->orderBy('nome')
                 ->get(['id', 'nome', 'identificacao']),
-            'tipos_servico' => $this->tiposAtivos(),
+            'equipamentos' => $this->equipamentos(),
             'filtros' => ['embarcacao_id' => $embarcacaoId],
         ]);
     }
@@ -103,13 +110,12 @@ class ServicoController extends Controller
     }
 
     /**
-     * Opções do formulário. A tela ordena com `localeCompare` em pt-BR, que trata
-     * caixa e acento melhor que o `ORDER BY` do SQLite.
+     * Verificação da MEL02, na ordem de cadastro.
      *
      * @return array<int, array{id: int, nome: string}>
      */
-    private function tiposAtivos(): array
+    private function equipamentos(): array
     {
-        return TipoServico::query()->ativos()->get(['id', 'nome'])->toArray();
+        return Equipamento::query()->orderBy('id')->get(['id', 'nome'])->toArray();
     }
 }

@@ -11,7 +11,8 @@ import AppLayout from '@/layouts/AppLayout';
 import CampoFotos from '@/components/CampoFotos';
 import GaleriaFotos from '@/components/GaleriaFotos';
 import { LIMITE_FOTOS_POR_SERVICO, useEnvioFotos } from '@/utils/fotos';
-import CampoTiposServico from '@/components/CampoTiposServico';
+import CampoAtividade from '@/components/CampoAtividade';
+import CampoEquipamentos, { condicoesIniciais, ResumoEquipamentos } from '@/components/CampoEquipamentos';
 
 const STATUS_CONFIG = {
     em_execucao: { label: 'Em Execução', color: 'blue' },
@@ -39,7 +40,7 @@ const formatarDataHora = (iso) => {
     });
 };
 
-export default function Historico({ servicos, embarcacoes, tipos_servico, filtros }) {
+export default function Historico({ servicos, embarcacoes, equipamentos = [], filtros }) {
     const { auth, flash } = usePage().props;
     const isAdmin = auth.user.is_admin;
     const funcionarioId = auth.user.funcionario_id;
@@ -60,10 +61,7 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
     }, [flash]);
 
     const editForm = useForm({
-        initialValues: { tipos: [], observacao: '', status: '' },
-        validate: {
-            tipos: (v) => (v.length === 0 ? 'Selecione ao menos um serviço' : null),
-        },
+        initialValues: { atividade: null, equipamentos: {}, observacao: '', status: '' },
     });
 
     const filtrarPorEmbarcacao = (valor) => {
@@ -79,7 +77,8 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
         setFotosNovas([]);
         envioFotos.limparRecusadas();
         editForm.setValues({
-            tipos: srv.tipos.map((t) => String(t.id)),
+            atividade: srv.atividade ?? null,
+            equipamentos: condicoesIniciais(equipamentos, srv.equipamentos),
             observacao: srv.observacao || '',
             status: srv.status,
         });
@@ -90,7 +89,9 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
         router.put(
             route('servicos.update', editando.id),
             {
-                tipos: values.tipos.map(Number),
+                equipamentos: values.equipamentos,
+                // Registro antigo sem atividade definida pode ser salvo sem escolher uma.
+                ...(values.atividade ? { atividade: values.atividade } : {}),
                 observacao: values.observacao || null,
                 ...(values.status !== editando.status ? { status: values.status } : {}),
             },
@@ -240,6 +241,7 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
                                             <Text size="sm" lineClamp={2}>
                                                 {srv.tipos.map((t) => t.nome).join(', ')}
                                             </Text>
+                                            <ResumoEquipamentos equipamentos={equipamentos} vinculados={srv.equipamentos} />
                                             {srv.observacao && (
                                                 <Text size="xs" c="dimmed" lineClamp={1}>
                                                     Obs: {srv.observacao}
@@ -321,10 +323,18 @@ export default function Historico({ servicos, embarcacoes, tipos_servico, filtro
             >
                 <form onSubmit={editForm.onSubmit(salvarEdicao)}>
                     <Stack gap="sm">
-                        <CampoTiposServico
-                            tipos={tipos_servico}
-                            extras={editando?.tipos}
-                            {...editForm.getInputProps('tipos')}
+                        <CampoEquipamentos
+                            equipamentos={equipamentos}
+                            value={editForm.values.equipamentos}
+                            onChange={(v) => editForm.setFieldValue('equipamentos', v)}
+                            errors={editForm.errors}
+                        />
+
+                        <CampoAtividade
+                            value={editForm.values.atividade}
+                            onChange={(v) => editForm.setFieldValue('atividade', v)}
+                            error={editForm.errors.atividade}
+                            obrigatorio={false}
                         />
 
                         <Textarea label="Observações" minRows={3} {...editForm.getInputProps('observacao')} />
