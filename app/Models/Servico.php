@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'embarcacao_id',
     'funcionario_id',
-    'descricao',
     'data_execucao',
     'status',
     'observacao',
@@ -30,11 +31,28 @@ class Servico extends Model
 
     public const STATUS_CONCLUIDO = 'concluido';
 
+    /** Rótulos de `Historico.jsx`, para o que sai do servidor (relatório). */
+    public const STATUS_ROTULOS = [
+        self::STATUS_EM_EXECUCAO => 'Em Execução',
+        self::STATUS_AGUARDANDO_VISTORIA => 'Aguardando Vistoria',
+        self::STATUS_CONCLUIDO => 'Concluído',
+    ];
+
     /** Valores aceitos no payload; as transições são validadas em ServicoService. */
     public const STATUS_EDITAVEIS = [
         self::STATUS_EM_EXECUCAO,
         self::STATUS_AGUARDANDO_VISTORIA,
         self::STATUS_CONCLUIDO,
+    ];
+
+    /**
+     * Atividade executada da verificação (MEL02) => tipo do catálogo que a
+     * representa. A escolha vira o vínculo com esse tipo em `servico_tipo_servico`,
+     * e o serviço continua contando no relatório e na ficha da embarcação.
+     */
+    public const ATIVIDADES = [
+        'lavagem' => 'Lavagem',
+        'limpeza' => 'Limpeza',
     ];
 
     /**
@@ -44,7 +62,6 @@ class Servico extends Model
     {
         return [
             'data_execucao' => 'date',
-            'descricao' => 'array',
         ];
     }
 
@@ -56,6 +73,34 @@ class Servico extends Model
     public function funcionario(): BelongsTo
     {
         return $this->belongsTo(Funcionario::class);
+    }
+
+    /** Itens do serviço (D-04). */
+    public function tipos(): BelongsToMany
+    {
+        return $this->belongsToMany(TipoServico::class, 'servico_tipo_servico');
+    }
+
+    /** Condições da vistoria (MEL02); equipamento sem vínculo "não se aplica". */
+    public function equipamentos(): BelongsToMany
+    {
+        return $this->belongsToMany(Equipamento::class, 'servico_equipamento')->withPivot('condicao');
+    }
+
+    /**
+     * Atividade lida dos tipos já carregados. Registro antigo com as duas, ou
+     * com nenhuma, fica sem atividade em vez de ganhar uma por palpite.
+     */
+    public function atividadeExecutada(): ?string
+    {
+        $atividades = array_values(array_intersect(Servico::ATIVIDADES, $this->tipos->pluck('nome')->all()));
+
+        return count($atividades) === 1 ? array_search($atividades[0], Servico::ATIVIDADES, true) : null;
+    }
+
+    public function fotos(): HasMany
+    {
+        return $this->hasMany(ServicoFoto::class)->orderBy('ordem')->orderBy('id');
     }
 
     public function createdBy(): BelongsTo

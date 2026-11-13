@@ -34,6 +34,13 @@ class FuncionarioController extends Controller
                     'telefone' => $f->telefone,
                     'ativo' => $f->ativo,
                     'email' => $f->user?->email,
+                    'cep' => $f->cep,
+                    'logradouro' => $f->logradouro,
+                    'numero' => $f->numero,
+                    'complemento' => $f->complemento,
+                    'bairro' => $f->bairro,
+                    'cidade' => $f->cidade,
+                    'uf' => $f->uf,
                 ]),
             'filtros' => ['busca' => $termo],
         ]);

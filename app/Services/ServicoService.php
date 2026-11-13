@@ -3,9 +3,13 @@
 namespace App\Services;
 
 use App\Models\Embarcacao;
+use App\Models\Equipamento;
 use App\Models\Funcionario;
 use App\Models\Servico;
+use App\Models\TipoServico;
 use App\Models\User;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -16,7 +20,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 class ServicoService
 {
     /**
-     * @param  array{embarcacao_id: int, funcionario_id: int, descricao: array<int, string>, data_execucao: string, observacao: ?string}  $data
+     * @param  array{embarcacao_id: int, funcionario_id: int, atividade: string, equipamentos?: array<int, string>, data_execucao: string, observacao: ?string}  $data
      */
     public function criar(array $data, User $autor): Servico
     {
@@ -40,12 +44,21 @@ class ServicoService
             ]);
         }
 
-        return Servico::query()->create([
-            ...$data,
-            'status' => Servico::STATUS_AGUARDANDO_VISTORIA,
-            'created_by_user_id' => $autor->id,
-            'updated_by_user_id' => $autor->id,
-        ]);
+        $tipoDaAtividade = $this->tipoDaAtividade($data['atividade']);
+
+        return DB::transaction(function () use ($data, $autor, $tipoDaAtividade): Servico {
+            $servico = Servico::query()->create([
+                ...Arr::except($data, ['atividade', 'equipamentos']),
+                'status' => Servico::STATUS_AGUARDANDO_VISTORIA,
+                'created_by_user_id' => $autor->id,
+                'updated_by_user_id' => $autor->id,
+            ]);
+
+            $servico->tipos()->sync([$tipoDaAtividade]);
+            $this->sincronizarEquipamentos($servico, $data['equipamentos'] ?? []);
+
+            return $servico;
+        });
     }
 
     /**
@@ -76,9 +89,54 @@ class ServicoService
             ]);
         }
 
-        $servico->update([...$data, 'updated_by_user_id' => $autor->id]);
+        if (array_key_exists('tipos', $data)) {
+            $this->recusarTipoInativoNovo($servico, $data['tipos']);
+        }
 
-        return $servico;
+        $tipoDaAtividade = array_key_exists('atividade', $data)
+            ? $this->tipoDaAtividade($data['atividade'], $servico)
+            : null;
+
+        return DB::transaction(function () use ($servico, $data, $autor, $tipoDaAtividade): Servico {
+            $servico->update([...Arr::except($data, ['tipos', 'atividade', 'equipamentos']), 'updated_by_user_id' => $autor->id]);
+
+            if (array_key_exists('tipos', $data)) {
+                $servico->tipos()->sync($data['tipos']);
+            }
+
+            if ($tipoDaAtividade !== null) {
+                $this->trocarAtividade($servico, $tipoDaAtividade);
+            }
+
+            if (array_key_exists('equipamentos', $data)) {
+                $this->sincronizarEquipamentos($servico, $data['equipamentos']);
+            }
+
+            return $servico;
+        });
+    }
+
+    /**
+     * Regra de autoria: administrador mexe em qualquer serviço; funcionário só
+     * nos próprios, ainda não concluídos. Também vale para as fotos (INV05).
+     */
+    public function autorizarAutoria(Servico $servico, User $autor): void
+    {
+        if ($autor->isAdmin()) {
+            return;
+        }
+
+        if ($servico->funcionario_id !== $this->funcionarioDoUsuario($autor)) {
+            throw new AccessDeniedHttpException(
+                'Acesso negado. Você só pode editar seus próprios serviços.',
+            );
+        }
+
+        if ($servico->status === Servico::STATUS_CONCLUIDO) {
+            throw new AccessDeniedHttpException(
+                'Serviços concluídos não podem ser editados por funcionários.',
+            );
+        }
     }
 
     /**
@@ -93,19 +151,9 @@ class ServicoService
         ?string $novoStatus,
         User $autor,
     ): void {
+        $this->autorizarAutoria($servico, $autor);
+
         $funcionarioId = $this->funcionarioDoUsuario($autor);
-
-        if ($servico->funcionario_id !== $funcionarioId) {
-            throw new AccessDeniedHttpException(
-                'Acesso negado. Você só pode editar seus próprios serviços.',
-            );
-        }
-
-        if ($servico->status === Servico::STATUS_CONCLUIDO) {
-            throw new AccessDeniedHttpException(
-                'Serviços concluídos não podem ser editados por funcionários.',
-            );
-        }
 
         if ($novoStatus === Servico::STATUS_CONCLUIDO) {
             throw new AccessDeniedHttpException(
@@ -124,6 +172,70 @@ class ServicoService
             && (int) $data['funcionario_id'] !== $funcionarioId) {
             throw new AccessDeniedHttpException('Você não pode reatribuir este serviço.');
         }
+    }
+
+    /**
+     * Tipo desativado continua valendo nos serviços que já o têm, mas não entra
+     * em serviço nenhum a partir de agora.
+     *
+     * @param  array<int, int>  $tipos
+     */
+    private function recusarTipoInativoNovo(Servico $servico, array $tipos): void
+    {
+        $novos = array_diff($tipos, $servico->tipos()->pluck('tipos_servico.id')->all());
+
+        if (TipoServico::query()->whereKey($novos)->where('ativo', false)->exists()) {
+            throw ValidationException::withMessages([
+                'tipos' => 'Tipo de serviço fora de uso não pode ser adicionado.',
+            ]);
+        }
+    }
+
+    /**
+     * Tipo do catálogo que representa a atividade. Desativado só vale se o
+     * serviço já o tem, como em `recusarTipoInativoNovo`.
+     */
+    private function tipoDaAtividade(string $atividade, ?Servico $servico = null): int
+    {
+        $tipo = TipoServico::query()->where('nome', Servico::ATIVIDADES[$atividade])->first();
+
+        $jaLigado = $tipo !== null && $servico?->tipos()->whereKey($tipo->id)->exists();
+
+        if ($tipo === null || (! $tipo->ativo && ! $jaLigado)) {
+            throw ValidationException::withMessages([
+                'atividade' => 'A atividade selecionada não está disponível no catálogo.',
+            ]);
+        }
+
+        return $tipo->id;
+    }
+
+    /** Atividade é exclusiva; os demais tipos de um registro antigo ficam. */
+    private function trocarAtividade(Servico $servico, int $tipoDaAtividade): void
+    {
+        $outras = TipoServico::query()
+            ->whereIn('nome', Servico::ATIVIDADES)
+            ->whereKeyNot($tipoDaAtividade)
+            ->pluck('id');
+
+        $servico->tipos()->detach($outras);
+        $servico->tipos()->syncWithoutDetaching([$tipoDaAtividade]);
+    }
+
+    /**
+     * O payload traz o estado completo da verificação. "Não se aplica" não vira
+     * linha: equipamento sem vínculo já é lido assim.
+     *
+     * @param  array<int, string>  $condicoes  id do equipamento => condição
+     */
+    private function sincronizarEquipamentos(Servico $servico, array $condicoes): void
+    {
+        $servico->equipamentos()->sync(
+            collect($condicoes)
+                ->reject(fn (string $condicao): bool => $condicao === Equipamento::CONDICAO_NAO_SE_APLICA)
+                ->map(fn (string $condicao): array => ['condicao' => $condicao])
+                ->all(),
+        );
     }
 
     private function funcionarioDoUsuario(User $user): int

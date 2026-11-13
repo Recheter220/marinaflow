@@ -1,27 +1,34 @@
 import { useState } from 'react';
 import { Head, useForm as useInertiaForm, usePage } from '@inertiajs/react';
 import {
-    Title, Button, Select, Checkbox, Textarea, Group, Stack, Paper, Text,
-    Alert, SimpleGrid,
+    Title, Button, Select, Textarea, Group, Stack, Paper, Text,
+    Alert,
 } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
+import dayjs from 'dayjs';
 import { notifications } from '@mantine/notifications';
 import { IconTool, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
-import { SERVICO_OPTION_COLUMNS } from '@/utils/servicos';
+import CampoFotos from '@/components/CampoFotos';
+import { LIMITE_FOTOS_POR_SERVICO, useEnvioFotos } from '@/utils/fotos';
+import CampoAtividade from '@/components/CampoAtividade';
+import CampoEquipamentos, { condicoesIniciais } from '@/components/CampoEquipamentos';
 import 'dayjs/locale/pt-br';
 
-export default function RegistrarServico({ embarcacoes, funcionarios }) {
+export default function RegistrarServico({ embarcacoes, funcionarios, equipamentos = [] }) {
     const { auth } = usePage().props;
     const isAdmin = auth.user.is_admin;
     const funcionarioId = auth.user.funcionario_id;
 
     const [sucesso, setSucesso] = useState(false);
+    const [fotos, setFotos] = useState([]);
+    const envioFotos = useEnvioFotos();
 
-    const { data, setData, post, processing, errors, reset } = useInertiaForm({
+    const { data, setData, post, processing, errors, reset, transform } = useInertiaForm({
         embarcacao_id: null,
         funcionario_id: isAdmin ? null : (funcionarioId ? String(funcionarioId) : null),
-        descricao: [],
+        atividade: '',
+        equipamentos: condicoesIniciais(equipamentos),
         data_execucao: new Date(),
         observacao: '',
     });
@@ -29,19 +36,21 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
     const submit = (e) => {
         e.preventDefault();
 
+        // `transform` é método do useForm no Inertia v3; como opção do `post()` é ignorado.
+        transform((d) => ({
+            ...d,
+            embarcacao_id: d.embarcacao_id ? Number(d.embarcacao_id) : null,
+            funcionario_id: d.funcionario_id ? Number(d.funcionario_id) : null,
+            // Data no fuso do navegador. `toISOString()` passa para UTC, e depois das 21h
+            // em Brasília o dia já é o seguinte.
+            data_execucao: d.data_execucao ? dayjs(d.data_execucao).format('YYYY-MM-DD') : null,
+            observacao: d.observacao || null,
+        }));
+
         post(route('servicos.store'), {
-            transform: (d) => ({
-                ...d,
-                embarcacao_id: d.embarcacao_id ? Number(d.embarcacao_id) : null,
-                funcionario_id: d.funcionario_id ? Number(d.funcionario_id) : null,
-                data_execucao: d.data_execucao
-                    ? new Date(d.data_execucao).toISOString().split('T')[0]
-                    : null,
-                observacao: d.observacao || null,
-            }),
             preserveScroll: true,
-            onSuccess: () => {
-                reset('embarcacao_id', 'descricao', 'observacao');
+            onSuccess: (page) => {
+                reset('embarcacao_id', 'atividade', 'equipamentos', 'observacao');
                 if (!isAdmin && funcionarioId) {
                     setData('funcionario_id', String(funcionarioId));
                 }
@@ -52,9 +61,47 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                     color: 'green',
                     icon: <IconCheck size={16} />,
                 });
+
+                // Sem `await`/`return`: o Inertia aguarda a promise do onSuccess
+                // antes de processar a próxima resposta, e o envio travaria.
+                const servicoId = page.flash?.servico_id;
+                if (servicoId && fotos.length > 0) {
+                    enviarFotos(servicoId);
+                }
             },
         });
     };
+
+    /**
+     * O serviço já existe: o que for recusado não volta para o formulário,
+     * senão um novo envio criaria outro serviço.
+     */
+    const enviarFotos = async (servicoId) => {
+        const selecionadas = fotos;
+        setFotos([]);
+        const naoEnviadas = await envioFotos.enviar(servicoId, selecionadas);
+        const enviadas = selecionadas.length - naoEnviadas.length;
+
+        if (enviadas > 0) {
+            notifications.show({
+                title: 'Fotos anexadas',
+                message: `${enviadas} foto${enviadas !== 1 ? 's' : ''} anexada${enviadas !== 1 ? 's' : ''} ao serviço.`,
+                color: 'green',
+                icon: <IconCheck size={16} />,
+            });
+        }
+    };
+
+    const limpar = () => {
+        reset('embarcacao_id', 'atividade', 'equipamentos', 'observacao');
+        setFotos([]);
+        envioFotos.limparRecusadas();
+        if (!isAdmin && funcionarioId) {
+            setData('funcionario_id', String(funcionarioId));
+        }
+    };
+
+    const ocupado = processing || envioFotos.enviando;
 
     const embarcacaoOptions = embarcacoes.map((e) => ({
         value: String(e.id),
@@ -139,23 +186,18 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                                 error={errors.data_execucao}
                             />
 
-                            <Checkbox.Group
-                                label="Serviços Realizados"
-                                required
-                                value={data.descricao}
-                                onChange={(v) => setData('descricao', v)}
-                                error={errors.descricao}
-                            >
-                                <SimpleGrid cols={2} spacing="xl" mt="xs">
-                                    {SERVICO_OPTION_COLUMNS.map((column, index) => (
-                                        <Stack key={index} gap="xs">
-                                            {column.map((servico) => (
-                                                <Checkbox key={servico} value={servico} label={servico} />
-                                            ))}
-                                        </Stack>
-                                    ))}
-                                </SimpleGrid>
-                            </Checkbox.Group>
+                            <CampoEquipamentos
+                                equipamentos={equipamentos}
+                                value={data.equipamentos}
+                                onChange={(v) => setData('equipamentos', v)}
+                                errors={errors}
+                            />
+
+                            <CampoAtividade
+                                value={data.atividade}
+                                onChange={(v) => setData('atividade', v)}
+                                error={errors.atividade}
+                            />
 
                             <Textarea
                                 label="Observações"
@@ -167,19 +209,25 @@ export default function RegistrarServico({ embarcacoes, funcionarios }) {
                                 error={errors.observacao}
                             />
 
+                            <CampoFotos
+                                value={fotos}
+                                onChange={setFotos}
+                                restantes={LIMITE_FOTOS_POR_SERVICO}
+                                progresso={envioFotos.progresso}
+                                recusadas={envioFotos.recusadas}
+                                onFecharRecusadas={envioFotos.limparRecusadas}
+                            />
+                            {envioFotos.recusadas.length > 0 && (
+                                <Text size="sm" c="dimmed">
+                                    O serviço foi registrado. Anexe as fotos recusadas pelo Histórico.
+                                </Text>
+                            )}
+
                             <Group justify="flex-end" mt="md">
-                                <Button
-                                    variant="default"
-                                    onClick={() => {
-                                        reset('embarcacao_id', 'descricao', 'observacao');
-                                        if (!isAdmin && funcionarioId) {
-                                            setData('funcionario_id', String(funcionarioId));
-                                        }
-                                    }}
-                                >
+                                <Button variant="default" onClick={limpar} disabled={ocupado}>
                                     Limpar
                                 </Button>
-                                <Button type="submit" loading={processing}>
+                                <Button type="submit" loading={ocupado} disabled={fotos.length > 10}>
                                     Serviço Registrado
                                 </Button>
                             </Group>

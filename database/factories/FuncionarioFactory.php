@@ -20,6 +20,13 @@ class FuncionarioFactory extends Factory
             'cargo' => fake()->randomElement(['Mecânico', 'Eletricista', 'Pintor']),
             'telefone' => fake()->numerify('###########'),
             'ativo' => true,
+            'cep' => fake()->numerify('########'),
+            'logradouro' => fake()->streetName(),
+            'numero' => fake()->buildingNumber(),
+            'complemento' => null,
+            'bairro' => fake()->randomElement(['Centro', 'Jardim das Flores', 'Vila Nova']),
+            'cidade' => fake()->city(),
+            'uf' => fake()->randomElement(['SP', 'RJ', 'MG']),
         ];
     }
 

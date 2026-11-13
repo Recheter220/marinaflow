@@ -102,13 +102,14 @@ Todas fechadas, exceto onde indicado. Nenhuma spec está bloqueada esperando dec
 | D-01 | Quais dependências novas entram? | **Aprovadas:** `league/flysystem-aws-s3-v3` (MF-03), `vitest` + `@testing-library/react` + `@testing-library/jest-dom` + `@testing-library/user-event` + `jsdom` (MF-01), `barryvdh/laravel-dompdf` (MF-07), `bacon/bacon-qr-code` (MF-09). Nenhuma tem substituto dentro do que já está instalado. Qualquer outra exige aprovação nova. | MF-01, MF-03, MF-07, MF-09 |
 | D-02 | Arrastar-e-soltar para fotos: `@mantine/dropzone` ou `FileInput`? | **`FileInput`**, que já vem no `@mantine/core`. Dependência nova por um ganho de ergonomia que ninguém mediu não se paga. Reabrir se a equipe do píer reclamar do fluxo no celular. | MF-04 |
 | D-03 | Motor de PDF: DomPDF ou Browsershot? | **DomPDF.** Deixou de ser preferência e virou restrição: o runtime da Vercel não tem Chromium, então Browsershot e `spatie/laravel-pdf` são impossíveis na plataforma escolhida. O `gd` está presente, confirmado em produção, então imagem dentro do PDF funciona. | MF-07, MF-09 |
-| D-04 | Catálogo de serviços: lista fixa em `utils/servicos.js` ou tabela? | **Vira tabela.** Com a MF-05 cancelada, é a única fonte de agregação que resta. Contar tipo de serviço sobre o texto livre de `descricao` quebra a série histórica no dia em que alguém renomear um item. Custo: migration da tabela de tipos, pivot, e backfill dos 8 itens que hoje estão no arquivo. **Única decisão aqui que aumenta escopo — precisa de confirmação do PO.** Se o PO adiar, as RFs de contagem por tipo passam a ser aproximações e têm de ser rotuladas como tal na tela e no PDF. | MF-07, MF-08 |
+| D-04 | Catálogo de serviços: lista fixa em `utils/servicos.js` ou tabela? | **Vira tabela — implementado na MF-07.** Contar tipo de serviço sobre o texto livre de `descricao` quebrava a série histórica no dia em que alguém renomeasse um item. Os itens agora vivem em `tipos_servico`, ligados por `servico_tipo_servico`; o backfill levou os 8 itens do arquivo e transformou texto fora do catálogo em tipo inativo. Tipo é desativado, nunca apagado: sai do formulário e continua no histórico. A contagem por tipo no relatório e no painel é exata. | MF-07, MF-08 |
 | D-05 | ViaCEP vale para o funcionário ou também para o cliente responsável? | **Só funcionário.** `cliente_responsavel` é campo de texto solto hoje; quando virar entidade própria, o endereço vai junto nessa hora. | MF-10 |
 | D-06 | Plataforma de hospedagem | **Vercel + Neon**, ambos em São Paulo. O monólito inteiro roda como função PHP via runtime `vercel-php` — não há frontend separado para hospedar, que era a premissa errada do `TODO.md`. Em produção desde 30/09/2026. | MF-13 |
 | D-07 | Migrar o e-mail do Gmail para um relay transacional (Brevo)? | **Pendente de condição externa:** exige domínio próprio. Hoje é Gmail + App Password, escolhido por alinhamento SPF/DKIM — sem domínio, enviar como `@gmail.com` por relay de terceiro é descartado ou marcado como spam em silêncio, e o convite de senha é o único e-mail que, se não chegar, impede o primeiro acesso. Limites que motivam a troca: 500 envios/dia, conta pessoal como remetente, nenhum log de entrega, nenhum webhook de bounce. | MF-13 |
 | D-08 | `ArquivoService` encapsulando o Storage vale a camada? | **Mantido.** `Storage::disk('fotos')->temporaryUrl()` resolveria direto dentro do serviço de domínio, mas o wrapper tem valor didático para o time e sustenta o acordo de que controller nenhum fala com `Storage`. | MF-03, MF-04 |
 | D-09 | Qual provedor compatível com S3? | **Cloudflare R2.** Egresso zero, e foto de serviço é vista e revista; 10 GB no gratuito (≈ 3.300 fotos de 3 MB, mais com redimensionamento); edge com presença em São Paulo, o que importa porque o navegador baixa a imagem direto do bucket, não pela função. `AWS_DEFAULT_REGION` tem de ser `auto` — é a única região que o R2 aceita. | MF-03, MF-04 |
 | D-10 | Controle de peças | **Cancelado por especificação do usuário da marina.** O sistema controla serviços e fotos. Sai o catálogo de peças e sai o vínculo peça-serviço; os campos de custo derivados foram removidos de MF-06, MF-07 e MF-08. Ver [MF-05](MF-05.md). | MF-05 e dependentes |
+| D-11 | Como enviar foto de até 10 MB se a função da Vercel recusa corpo acima de 4,5 MB? | **Redimensionar no navegador e enviar em lotes.** Decisão consciente do desenvolvimento, tomada na MF-04. A tela reduz cada foto para no máximo 1920 px no lado maior, em JPEG (qualidade 0,85), e agrupa os envios em lotes de até 3,5 MB e 10 fotos. Foto de celular cai de ~5 MB para ~400 KB, o que também poupa a cota do R2 (D-09). O servidor mantém a validação de 10 MB como defesa, mas na prática nunca recebe arquivo desse tamanho pela tela. Alternativa descartada: upload direto ao R2 por URL pré-assinada, que aceitaria o original mas muda rotas e contrato, exige CORS no bucket e leva a validação para depois do upload. Reabrir se a equipe precisar da foto em resolução original. | MF-04, MF-06 |
 
 ## Restrições da plataforma que toda spec herda
 
@@ -121,6 +122,8 @@ saber disto antes de escrever a primeira linha:
 - **O filesystem é somente-leitura fora de `/tmp`**, e `/tmp` morre com a invocação.
   Nada de gravar arquivo fora do disco S3. É por isso que a MF-03 é pré-requisito
   absoluto da MF-04.
+- **O corpo da requisição tem teto de 4,5 MB.** A Vercel recusa com 413 antes de chegar
+  ao Laravel. Todo upload passa por aqui — ver D-11.
 - **Extensões disponíveis** (confirmadas em produção): `gd` com JPEG/PNG/WebP, `exif`,
   `zip`, `intl`, `pdo_pgsql`, `fileinfo`. **Não há `imagick`.**
 - **Migração não roda no deploy.** A Vercel não tem gancho de release; migration é
@@ -131,9 +134,6 @@ saber disto antes de escrever a primeira linha:
 
 ### Alto
 
-- **Agregação por tipo de serviço sobre texto livre.** Relatório e painel contam itens
-  de um array de strings; renomear um item quebra a série histórica. Mitigado por D-04,
-  que precisa do aval do PO antes da Onda 2.
 - **Vazamento de arquivo.** Bucket privado com URL assinada é obrigatório: foto de
   embarcação de cliente não pode ficar pública por descuido de configuração.
 - **Divergência de dialeto entre teste e produção.** A suíte roda em SQLite e produção
@@ -143,9 +143,9 @@ saber disto antes de escrever a primeira linha:
 
 ### Médio
 
-- **Tempo de geração do PDF.** Síncrono até 500 serviços; acima disso, fila e
-  notificação — medir na MF-07 antes de assumir. Com `sync` em produção, o teto real
-  são os 30 s da função.
+- **Tempo de geração do PDF.** Medido na MF-07: 500 serviços em ~6 s no ambiente local,
+  quase tudo no render do DomPDF. Falta a medida em produção, onde a CPU é mais lenta;
+  com `sync`, o teto real são os 30 s da função.
 - **Cota da OpenWeather.** Cache de 30 minutos mantém o uso previsível; sem cache,
   cada abertura de painel vira uma chamada.
 - **Cinco migrations novas** (fotos, `concluido_em`, ULID, tipos de serviço e pivot).
