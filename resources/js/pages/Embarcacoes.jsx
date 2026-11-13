@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Title, Button, Table, TextInput, Modal, Group, Stack, Select, NumberInput,
-    Badge, ActionIcon, Text, Paper, Center, Tooltip,
+    Badge, ActionIcon, Text, Paper, Center, Tooltip, MultiSelect,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconPlus, IconSearch, IconEdit, IconShip, IconFileSearch } from '@tabler/icons-react';
+import {
+    IconPlus, IconSearch, IconEdit, IconShip, IconFileSearch, IconQrcode, IconTags,
+} from '@tabler/icons-react';
 import AppLayout from '@/layouts/AppLayout';
+import QrCodeModal from '@/components/QrCodeModal';
 
 const STATUS_LABELS = {
     ativa: 'Ativa',
@@ -37,6 +40,9 @@ export default function Embarcacoes({ embarcacoes, funcionarios, filtros }) {
     const [busca, setBusca] = useState(filtros.busca ?? '');
     const [buscaDebounced] = useDebouncedValue(busca, 300);
     const [salvando, setSalvando] = useState(false);
+    const [qrCode, setQrCode] = useState(null);
+    const [etiquetasAbertas, setEtiquetasAbertas] = useState(false);
+    const [selecaoEtiquetas, setSelecaoEtiquetas] = useState([]);
 
     useEffect(() => {
         if (flash?.success) {
@@ -134,9 +140,18 @@ export default function Embarcacoes({ embarcacoes, funcionarios, filtros }) {
                     <Title order={2}>Embarcações</Title>
                 </Group>
                 {isAdmin && (
-                    <Button leftSection={<IconPlus size={16} />} onClick={abrirNovo}>
-                        Nova Embarcação
-                    </Button>
+                    <Group gap="sm">
+                        <Button
+                            variant="default"
+                            leftSection={<IconTags size={16} />}
+                            onClick={() => setEtiquetasAbertas(true)}
+                        >
+                            Etiquetas
+                        </Button>
+                        <Button leftSection={<IconPlus size={16} />} onClick={abrirNovo}>
+                            Nova Embarcação
+                        </Button>
+                    </Group>
                 )}
             </Group>
 
@@ -178,7 +193,7 @@ export default function Embarcacoes({ embarcacoes, funcionarios, filtros }) {
                                 <Table.Th>Cliente</Table.Th>
                                 <Table.Th>Responsável (Equipe)</Table.Th>
                                 <Table.Th>Status</Table.Th>
-                                {isAdmin && <Table.Th w={90}>Ações</Table.Th>}
+                                {isAdmin && <Table.Th w={120}>Ações</Table.Th>}
                             </Table.Tr>
                         </Table.Thead>
                         <Table.Tbody>
@@ -224,6 +239,16 @@ export default function Embarcacoes({ embarcacoes, funcionarios, filtros }) {
                                                         <IconFileSearch size={16} />
                                                     </ActionIcon>
                                                 </Tooltip>
+                                                <Tooltip label="QR Code">
+                                                    <ActionIcon
+                                                        variant="subtle"
+                                                        color="gray"
+                                                        aria-label={`QR Code de ${emb.nome}`}
+                                                        onClick={() => setQrCode(emb)}
+                                                    >
+                                                        <IconQrcode size={16} />
+                                                    </ActionIcon>
+                                                </Tooltip>
                                                 <Tooltip label="Editar">
                                                     <ActionIcon
                                                         variant="subtle"
@@ -237,16 +262,28 @@ export default function Embarcacoes({ embarcacoes, funcionarios, filtros }) {
                                         </Table.Td>
                                     ) : (
                                         <Table.Td>
-                                            <Tooltip label="Ver ficha">
-                                                <ActionIcon
-                                                    component={Link}
-                                                    href={route('embarcacoes.show', emb.id)}
-                                                    variant="subtle"
-                                                    color="gray"
-                                                >
-                                                    <IconFileSearch size={16} />
-                                                </ActionIcon>
-                                            </Tooltip>
+                                            <Group gap={4} wrap="nowrap">
+                                                <Tooltip label="Ver ficha">
+                                                    <ActionIcon
+                                                        component={Link}
+                                                        href={route('embarcacoes.show', emb.id)}
+                                                        variant="subtle"
+                                                        color="gray"
+                                                    >
+                                                        <IconFileSearch size={16} />
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                                <Tooltip label="QR Code">
+                                                    <ActionIcon
+                                                        variant="subtle"
+                                                        color="gray"
+                                                        aria-label={`QR Code de ${emb.nome}`}
+                                                        onClick={() => setQrCode(emb)}
+                                                    >
+                                                        <IconQrcode size={16} />
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                            </Group>
                                         </Table.Td>
                                     )}
                                 </Table.Tr>
@@ -301,6 +338,44 @@ export default function Embarcacoes({ embarcacoes, funcionarios, filtros }) {
                     </Stack>
                 </form>
             </Modal>
+
+            <QrCodeModal embarcacao={qrCode} onClose={() => setQrCode(null)} />
+
+            {isAdmin && (
+                <Modal
+                    opened={etiquetasAbertas}
+                    onClose={() => setEtiquetasAbertas(false)}
+                    title="Folha de etiquetas"
+                    centered
+                >
+                    <Stack gap="md">
+                        <MultiSelect
+                            label="Embarcações"
+                            description="Deixe vazio para gerar as etiquetas de todas as embarcações ativas."
+                            placeholder="Todas as ativas"
+                            data={embarcacoes.map((e) => ({ value: String(e.id), label: `${e.nome} (${e.identificacao})` }))}
+                            value={selecaoEtiquetas}
+                            onChange={setSelecaoEtiquetas}
+                            searchable
+                            clearable
+                        />
+                        <Group justify="flex-end">
+                            <Button variant="default" onClick={() => setEtiquetasAbertas(false)}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                component="a"
+                                href={route('embarcacoes.etiquetas', { embarcacoes: selecaoEtiquetas })}
+                                target="_blank"
+                                rel="noopener"
+                                leftSection={<IconTags size={16} />}
+                            >
+                                Gerar PDF
+                            </Button>
+                        </Group>
+                    </Stack>
+                </Modal>
+            )}
         </>
     );
 }
