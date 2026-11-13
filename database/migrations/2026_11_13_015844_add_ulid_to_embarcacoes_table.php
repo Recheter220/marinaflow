@@ -26,6 +26,13 @@ return new class extends Migration
                 ->where('id', $embarcacao->id)
                 ->update(['ulid' => Str::lower((string) Str::ulid())]));
 
+        // No SQLite, `change()` recria a tabela; dentro da transação da migration o PRAGMA
+        // que desliga as FKs é ignorado e o `drop table` apagaria em cascata os serviços.
+        // Lá a coluna fica nula no banco — o `HasUlids` do modelo garante o preenchimento.
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
+
         Schema::table('embarcacoes', function (Blueprint $table) {
             $table->ulid('ulid')->nullable(false)->change();
         });
