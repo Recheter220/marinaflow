@@ -19,7 +19,7 @@ class TipoServicoBackfillTest extends TestCase
 
     public function test_descricao_existente_vira_ligacao_com_o_catalogo_e_volta_no_rollback(): void
     {
-        $this->artisan('migrate:rollback', ['--step' => 2])->assertSuccessful();
+        $this->artisan('migrate:rollback', ['--step' => $this->passosAteOBackfill()])->assertSuccessful();
 
         $servicoId = DB::table('servicos')->insertGetId([
             'embarcacao_id' => Embarcacao::factory()->create()->id,
@@ -36,13 +36,21 @@ class TipoServicoBackfillTest extends TestCase
         $this->assertDatabaseHas('tipos_servico', ['nome' => 'Pintura', 'ativo' => false]);
         $this->assertEqualsCanonicalizing(['Motor', 'Pintura'], $this->nomesLigados($servicoId));
 
-        $this->artisan('migrate:rollback', ['--step' => 2])->assertSuccessful();
+        $this->artisan('migrate:rollback', ['--step' => $this->passosAteOBackfill()])->assertSuccessful();
 
         $this->assertSame(
             ['Motor', 'Pintura'],
             json_decode(DB::table('servicos')->where('id', $servicoId)->value('descricao'), true),
         );
         $this->assertDatabaseCount('tipos_servico', 0);
+    }
+
+    /** Volta até antes do backfill, por mais migrations que venham depois dele. */
+    private function passosAteOBackfill(): int
+    {
+        return DB::table('migrations')
+            ->where('migration', '>=', '2026_11_01_000047_backfill_tipos_servico_from_servicos_descricao')
+            ->count();
     }
 
     /**

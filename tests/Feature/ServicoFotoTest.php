@@ -260,7 +260,7 @@ class ServicoFotoTest extends TestCase
         $response = $this->actingAs($admin)->post(route('servicos.store'), [
             'embarcacao_id' => Embarcacao::factory()->create()->id,
             'funcionario_id' => Funcionario::factory()->create()->id,
-            'tipos' => $this->idsDosTipos('Limpeza'),
+            'atividade' => 'limpeza',
             'data_execucao' => '2026-01-15',
         ]);
 

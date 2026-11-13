@@ -9,9 +9,9 @@ const embarcacoes = [
     { id: 4, nome: 'Vento Sul', identificacao: 'BR-5678' },
 ];
 
-const tiposServico = [
-    { id: 1, nome: 'Limpeza' },
-    { id: 2, nome: 'Motor' },
+const equipamentos = [
+    { id: 1, nome: 'Buzina' },
+    { id: 3, nome: 'Motor' },
 ];
 
 const servico = (dados) => ({
@@ -20,6 +20,7 @@ const servico = (dados) => ({
     funcionario_id: 7,
     funcionario_nome: 'Fábio',
     tipos: [{ id: 1, nome: 'Limpeza' }],
+    equipamentos: [],
     observacao: null,
     status: 'em_execucao',
     fotos: [],
@@ -29,7 +30,7 @@ const servico = (dados) => ({
 });
 
 const renderHistorico = ({ servicos = [servico()], filtros = {}, auth = admin } = {}) =>
-    renderPagina(<Historico servicos={servicos} embarcacoes={embarcacoes} tipos_servico={tiposServico} filtros={filtros} />, { auth });
+    renderPagina(<Historico servicos={servicos} embarcacoes={embarcacoes} equipamentos={equipamentos} filtros={filtros} />, { auth });
 
 const filtro = () => screen.getByRole('textbox', { name: 'Filtrar por Embarcação' });
 
@@ -78,5 +79,45 @@ describe('Historico', () => {
         renderHistorico({ servicos: [servico({ status })] });
 
         expect(screen.getByRole('cell', { name: rotulo })).toBeInTheDocument();
+    });
+
+    it('resume só os equipamentos vinculados ao serviço', () => {
+        renderHistorico({ servicos: [servico({ equipamentos: [{ id: 3, condicao: 'com_defeito' }] })] });
+
+        expect(screen.getByText('Motor: Com defeito')).toBeInTheDocument();
+        expect(screen.queryByText(/^Buzina:/)).not.toBeInTheDocument();
+    });
+
+    it('envia a verificação completa ao salvar a edição', async () => {
+        const { container } = renderHistorico({ servicos: [servico({ equipamentos: [{ id: 3, condicao: 'com_defeito' }] })] });
+
+        // O botão do menu só tem nome no tooltip, que aparece no hover.
+        await userEvent.click(container.querySelector('.mantine-ActionIcon-root'));
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Editar Registro' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Salvar Alterações' }));
+
+        expect(router.put).toHaveBeenCalledWith(
+            route('servicos.update', 1),
+            expect.objectContaining({ equipamentos: { 1: 'nao_se_aplica', 3: 'com_defeito' } }),
+            expect.anything(),
+        );
+    });
+
+    const salvarEdicao = async (dados) => {
+        const { container } = renderHistorico({ servicos: [servico(dados)] });
+
+        await userEvent.click(container.querySelector('.mantine-ActionIcon-root'));
+        await userEvent.click(screen.getByRole('menuitem', { name: 'Editar Registro' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Salvar Alterações' }));
+
+        return router.put.mock.calls[0][1];
+    };
+
+    it('envia a atividade escolhida na edição', async () => {
+        expect(await salvarEdicao({ atividade: 'limpeza' })).toMatchObject({ atividade: 'limpeza' });
+    });
+
+    it('salva registro antigo sem atividade sem inventar uma', async () => {
+        expect(await salvarEdicao({ atividade: null })).not.toHaveProperty('atividade');
     });
 });

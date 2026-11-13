@@ -26,13 +26,12 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'tipos' => $this->idsDosTipos('Limpeza', 'Motor'),
+                'atividade' => 'limpeza',
                 'data_execucao' => '2026-01-15',
             ])
             ->assertRedirect();
 
         $servico = Servico::query()->firstOrFail();
-        $this->assertEqualsCanonicalizing(['Limpeza', 'Motor'], $servico->tipos->pluck('nome')->all());
         $this->assertSame(Servico::STATUS_AGUARDANDO_VISTORIA, $servico->status);
         $this->assertSame($admin->id, $servico->created_by_user_id);
         $this->assertSame($admin->id, $servico->updated_by_user_id);
@@ -50,7 +49,7 @@ class ServicoControllerTest extends TestCase
                     ->post(route('servicos.store'), [
                         'embarcacao_id' => $embarcacao->id,
                         'funcionario_id' => $funcionario->id,
-                        'tipos' => $this->idsDosTipos('Limpeza'),
+                        'atividade' => 'limpeza',
                         'data_execucao' => '2026-01-15',
                         'status' => $status,
                     ])
@@ -77,7 +76,7 @@ class ServicoControllerTest extends TestCase
             $servico = app(ServicoService::class)->criar([
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
+                'atividade' => 'limpeza',
                 'data_execucao' => '2026-01-15',
                 'status' => $status,
             ], $admin);
@@ -96,7 +95,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => 999,
                 'funcionario_id' => $funcionario->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
+                'atividade' => 'limpeza',
                 'data_execucao' => '2026-01-15',
             ])
             ->assertSessionHasErrors('embarcacao_id');
@@ -112,7 +111,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => 999,
-                'tipos' => $this->idsDosTipos('Limpeza'),
+                'atividade' => 'limpeza',
                 'data_execucao' => '2026-01-15',
             ])
             ->assertSessionHasErrors('funcionario_id');
@@ -128,7 +127,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
+                'atividade' => 'limpeza',
                 'data_execucao' => '2026-01-15',
             ])
             ->assertSessionHasErrors('funcionario_id');
@@ -136,7 +135,7 @@ class ServicoControllerTest extends TestCase
         $this->assertDatabaseCount('servicos', 0);
     }
 
-    public function test_tipos_e_data_sao_obrigatorios(): void
+    public function test_data_e_atividade_sao_obrigatorias_e_servicos_realizados_nao(): void
     {
         $admin = User::factory()->admin()->create();
         $funcionario = Funcionario::factory()->create();
@@ -147,7 +146,11 @@ class ServicoControllerTest extends TestCase
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
             ])
-            ->assertSessionHasErrors(['tipos', 'data_execucao']);
+            ->assertSessionHasErrors([
+                'data_execucao' => 'Data de execução é obrigatória.',
+                'atividade' => 'Selecione a atividade executada.',
+            ])
+            ->assertSessionDoesntHaveErrors('tipos');
     }
 
     /**
@@ -164,7 +167,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => Embarcacao::factory()->create()->id,
                 'funcionario_id' => Funcionario::factory()->create()->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
+                'atividade' => 'limpeza',
                 'data_execucao' => '2026-11-01T00:30:43.000Z',
             ])
             ->assertSessionHasErrors($mensagem);
@@ -188,7 +191,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $outro->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
+                'atividade' => 'limpeza',
                 'data_execucao' => '2026-01-15',
             ])
             ->assertRedirect();
@@ -208,7 +211,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $outro->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
+                'atividade' => 'limpeza',
                 'data_execucao' => '2026-01-15',
             ])
             ->assertForbidden();
@@ -226,7 +229,7 @@ class ServicoControllerTest extends TestCase
             ->post(route('servicos.store'), [
                 'embarcacao_id' => $embarcacao->id,
                 'funcionario_id' => $funcionario->id,
-                'tipos' => $this->idsDosTipos('Limpeza'),
+                'atividade' => 'limpeza',
                 'data_execucao' => '2026-01-15',
             ])
             ->assertForbidden();
@@ -381,21 +384,22 @@ class ServicoControllerTest extends TestCase
                 ->where('servicos.0.embarcacao_id', $embarcacao->id));
     }
 
-    public function test_tipo_inativo_nao_entra_em_servico_novo(): void
+    /** A verificação dos equipamentos substitui os serviços realizados no registro (MEL02). */
+    public function test_registro_ignora_servicos_realizados_enviados(): void
     {
         $admin = User::factory()->admin()->create();
-        $inativo = TipoServico::factory()->inativo()->create();
 
         $this->actingAs($admin)
             ->post(route('servicos.store'), [
                 'embarcacao_id' => Embarcacao::factory()->create()->id,
                 'funcionario_id' => Funcionario::factory()->create()->id,
-                'tipos' => [$inativo->id],
+                'atividade' => 'lavagem',
+                'tipos' => $this->idsDosTipos('Motor'),
                 'data_execucao' => '2026-01-15',
             ])
-            ->assertSessionHasErrors('tipos.0');
+            ->assertSessionHasNoErrors();
 
-        $this->assertDatabaseCount('servicos', 0);
+        $this->assertSame(['Lavagem'], Servico::query()->sole()->tipos()->pluck('nome')->all());
     }
 
     public function test_edicao_mantem_tipo_inativo_ja_ligado_ao_servico(): void
@@ -424,23 +428,16 @@ class ServicoControllerTest extends TestCase
         $this->assertSame(['Motor'], $servico->tipos()->pluck('nome')->all());
     }
 
-    public function test_telas_oferecem_apenas_tipos_ativos_e_historico_traz_os_do_servico(): void
+    public function test_historico_continua_trazendo_os_servicos_realizados_dos_registros_antigos(): void
     {
-        $this->withoutVite();
-
         $admin = User::factory()->admin()->create();
         $inativo = TipoServico::factory()->inativo()->create();
         Servico::factory()->comTipos([$inativo->nome])->create();
-        $ativos = TipoServico::query()->ativos()->count();
-
-        $this->actingAs($admin)
-            ->get(route('servicos.create'))
-            ->assertInertia(fn ($page) => $page->has('tipos_servico', $ativos));
 
         $this->actingAs($admin)
             ->get(route('servicos.index'))
             ->assertInertia(fn ($page) => $page
-                ->has('tipos_servico', $ativos)
+                ->missing('tipos_servico')
                 ->where('servicos.0.tipos', [['id' => $inativo->id, 'nome' => $inativo->nome]]));
     }
 
