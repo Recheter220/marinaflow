@@ -23,7 +23,7 @@ class RelatorioServicosRequest extends FormRequest
     {
         return [
             'inicio' => ['required', 'date'],
-            'fim' => ['required', 'date', 'after_or_equal:inicio', 'before_or_equal:'.now()->addDay()->toDateString()],
+            'fim' => ['required', 'date', 'after_or_equal:inicio'],
             'embarcacao_id' => ['nullable', 'integer', Rule::exists('embarcacoes', 'id')],
             'funcionario_id' => ['nullable', 'integer', Rule::exists('funcionarios', 'id')],
             'formato' => ['sometimes', Rule::in(['pdf', 'html'])],
@@ -61,7 +61,6 @@ class RelatorioServicosRequest extends FormRequest
             'fim.required' => 'Informe a data final.',
             'fim.date' => 'Data final inválida.',
             'fim.after_or_equal' => 'A data final deve ser igual ou posterior à inicial.',
-            'fim.before_or_equal' => 'A data final não pode estar no futuro.',
             'embarcacao_id.exists' => 'Embarcação selecionada não existe.',
             'funcionario_id.exists' => 'Funcionário selecionado não existe.',
             'formato.in' => 'Formato inválido. Use pdf ou html.',
