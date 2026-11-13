@@ -5,6 +5,7 @@ import { admin, funcionario, renderPagina } from './render';
 
 const embarcacao = {
     id: 1,
+    ulid: '01jcqr0000000000000000000a',
     nome: 'Maré Alta',
     identificacao: 'BR-1234',
     modelo: 'Focker 240',
@@ -55,6 +56,8 @@ describe('Embarcacoes', () => {
         expect(await screen.findByRole('img', { name: 'QR Code de Maré Alta' }))
             .toHaveAttribute('src', '/embarcacoes/qrcode/1');
         expect(screen.getByRole('link', { name: 'Baixar SVG' })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Abrir link' }))
+            .toHaveAttribute('href', '/embarcacoes/qr/01jcqr0000000000000000000a');
         expect(screen.getByRole('button', { name: 'Imprimir' })).toBeInTheDocument();
     });
 

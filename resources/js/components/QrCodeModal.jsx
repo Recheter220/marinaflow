@@ -1,5 +1,5 @@
 import { Button, Center, Group, Image, Modal, Stack, Text } from '@mantine/core';
-import { IconDownload, IconPrinter } from '@tabler/icons-react';
+import { IconDownload, IconExternalLink, IconPrinter } from '@tabler/icons-react';
 
 /**
  * RF-09.4 — QR da embarcação com download do SVG e impressão. Os links são
@@ -58,6 +58,16 @@ export default function QrCodeModal({ embarcacao, onClose }) {
                             leftSection={<IconDownload size={16} />}
                         >
                             Baixar SVG
+                        </Button>
+                        <Button
+                            component="a"
+                            href={route('embarcacoes.qr', embarcacao.ulid)}
+                            target="_blank"
+                            rel="noopener"
+                            variant="default"
+                            leftSection={<IconExternalLink size={16} />}
+                        >
+                            Abrir link
                         </Button>
                         <Button leftSection={<IconPrinter size={16} />} onClick={imprimir}>
                             Imprimir

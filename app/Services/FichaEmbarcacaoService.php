@@ -24,6 +24,7 @@ class FichaEmbarcacaoService
     /**
      * @return array{
      *     id: int,
+     *     ulid: string,
      *     nome: string,
      *     identificacao: string,
      *     modelo: ?string,
@@ -38,6 +39,7 @@ class FichaEmbarcacaoService
     {
         return [
             'id' => $embarcacao->id,
+            'ulid' => $embarcacao->ulid,
             'nome' => $embarcacao->nome,
             'identificacao' => $embarcacao->identificacao,
             'modelo' => $embarcacao->modelo,

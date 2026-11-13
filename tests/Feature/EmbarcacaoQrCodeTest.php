@@ -184,4 +184,18 @@ class EmbarcacaoQrCodeTest extends TestCase
             ->where('migration', '>=', '2026_11_13_015844_add_ulid_to_embarcacoes_table')
             ->count();
     }
+
+    public function test_ficha_e_lista_expoem_o_ulid_para_o_link_do_qr(): void
+    {
+        $embarcacao = Embarcacao::factory()->create();
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('embarcacoes.index'))
+            ->assertInertia(fn ($page) => $page->where('embarcacoes.0.ulid', $embarcacao->ulid));
+
+        $this->actingAs($admin)
+            ->get(route('embarcacoes.show', $embarcacao))
+            ->assertInertia(fn ($page) => $page->where('embarcacao.ulid', $embarcacao->ulid));
+    }
 }
