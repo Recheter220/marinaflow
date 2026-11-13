@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\EmbarcacaoController;
+use App\Http\Controllers\EmbarcacaoQrCodeController;
 use App\Http\Controllers\FuncionarioController;
 use App\Http\Controllers\IntegracaoCepController;
 use App\Http\Controllers\RelatorioController;
@@ -31,7 +32,16 @@ Route::middleware(['auth', 'ativo'])->group(function () {
     Route::redirect('/', '/embarcacoes')->name('dashboard');
 
     Route::get('/embarcacoes', [EmbarcacaoController::class, 'index'])->name('embarcacoes.index');
-    Route::get('/embarcacoes/{embarcacao}', [EmbarcacaoController::class, 'show'])->name('embarcacoes.show');
+    Route::get('/embarcacoes/{embarcacao}', [EmbarcacaoController::class, 'show'])
+        ->whereNumber('embarcacao')
+        ->name('embarcacoes.show');
+    Route::get('/embarcacoes/{embarcacao}/qrcode', [EmbarcacaoQrCodeController::class, 'svg'])
+        ->whereNumber('embarcacao')
+        ->name('embarcacoes.qrcode');
+    // Endereço curto de propósito: é o conteúdo do QR, e QR menor lê melhor.
+    Route::get('/e/{ulid}', [EmbarcacaoQrCodeController::class, 'redirecionar'])
+        ->whereUlid('ulid')
+        ->name('embarcacoes.qr');
     Route::get('/funcionarios', [FuncionarioController::class, 'index'])->name('funcionarios.index');
     Route::get('/integracoes/cep/{cep}', [IntegracaoCepController::class, 'show'])
         ->middleware('throttle:30,1')
@@ -56,6 +66,7 @@ Route::middleware(['auth', 'ativo'])->group(function () {
     Route::middleware('admin')->group(function () {
         Route::post('/embarcacoes', [EmbarcacaoController::class, 'store'])->name('embarcacoes.store');
         Route::put('/embarcacoes/{embarcacao}', [EmbarcacaoController::class, 'update'])->name('embarcacoes.update');
+        Route::get('/embarcacoes/etiquetas', [EmbarcacaoQrCodeController::class, 'etiquetas'])->name('embarcacoes.etiquetas');
 
         Route::post('/funcionarios', [FuncionarioController::class, 'store'])->name('funcionarios.store');
         Route::put('/funcionarios/{funcionario}', [FuncionarioController::class, 'update'])->name('funcionarios.update');
