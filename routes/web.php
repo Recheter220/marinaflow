@@ -8,6 +8,7 @@ use App\Http\Controllers\EmbarcacaoController;
 use App\Http\Controllers\EmbarcacaoQrCodeController;
 use App\Http\Controllers\FuncionarioController;
 use App\Http\Controllers\IntegracaoCepController;
+use App\Http\Controllers\MeteorologiaController;
 use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\ServicoController;
 use App\Http\Controllers\ServicoFotoController;
@@ -43,6 +44,7 @@ Route::middleware(['auth', 'ativo'])->group(function () {
         ->whereUlid('ulid')
         ->name('embarcacoes.qr');
     Route::get('/funcionarios', [FuncionarioController::class, 'index'])->name('funcionarios.index');
+    Route::get('/meteorologia', [MeteorologiaController::class, 'index'])->name('meteorologia.index');
     Route::get('/integracoes/cep/{cep}', [IntegracaoCepController::class, 'show'])
         ->middleware('throttle:30,1')
         ->name('integracoes.cep');
