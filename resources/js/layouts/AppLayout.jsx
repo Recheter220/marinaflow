@@ -13,6 +13,7 @@ import {
 } from '@mantine/core';
 import {
     IconShip,
+    IconCloud,
     IconUsers,
     IconTool,
     IconHistory,
@@ -23,6 +24,7 @@ import {
 } from '@tabler/icons-react';
 
 const navItems = [
+    { label: 'Meteorologia', icon: IconCloud, path: '/meteorologia', description: 'Previsão de São Sebastião' },
     { label: 'Embarcações', icon: IconShip, path: '/embarcacoes', description: 'Cadastro e gestão' },
     { label: 'Funcionários', icon: IconUsers, path: '/funcionarios', description: 'Equipe e cargos' },
     { label: 'Registrar Serviço', icon: IconTool, path: '/servicos/novo', description: 'Novo registro' },
